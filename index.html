@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Renovation portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDEFED;--surface:#FFFFFF;--ink:#1E2428;--muted:#5D676D;--line:#D2D7D6;--chip:#E2E6E5;
+  --accent:#F2B705;--accent-ink:#1E2428;--blue:#2D5BD8;--good:#2F7D4F;--bad:#B5412F;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#14181B;--surface:#1D2226;--ink:#E7EAEB;--muted:#9AA3A8;--line:#2E363B;--chip:#272E33;
+    --blue:#86A6FF;--good:#6CC08D;--bad:#F08A76;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#14181B;--surface:#1D2226;--ink:#E7EAEB;--muted:#9AA3A8;--line:#2E363B;--chip:#272E33;
+  --blue:#86A6FF;--good:#6CC08D;--bad:#F08A76;color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;margin:0;line-height:1.1}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1180px;margin:0 auto;padding:10px 16px 0}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brand b{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand span{color:var(--muted);font-size:14px;white-space:nowrap}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:6px -16px 0;padding:0 12px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;padding:10px 10px 11px;font-weight:500;color:var(--muted);white-space:nowrap;border-bottom:3px solid transparent;cursor:pointer}
+nav.tabs button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs .count{font-size:12px;color:var(--muted);margin-left:4px}
+
+main{max-width:1180px;margin:0 auto;padding:20px 16px 80px}
+.banner{background:var(--chip);border-left:4px solid var(--accent);padding:10px 14px;margin-bottom:16px;font-size:15px}
+.viewhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.viewhead h2{font-size:34px;font-weight:700}
+.viewhead p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:none;border-color:transparent;color:var(--blue);padding-left:4px;padding-right:4px}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;display:block}
+.card:hover{border-color:var(--muted)}
+.card h3{font-size:21px;font-weight:600}
+.meta{color:var(--muted);font-size:14px}
+.amount{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:24px;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-size:13px;padding:1px 8px;border-radius:20px;background:var(--chip);color:var(--ink);white-space:nowrap}
+.badge.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.badge.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.badge.warn{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.notes{margin:8px 0 0;white-space:pre-wrap;font-size:15px}
+.files{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.file{display:inline-flex;align-items:center;gap:6px;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;text-decoration:none;color:var(--ink);background:var(--paper);max-width:100%}
+.file span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.thumb{width:100%;max-height:180px;object-fit:cover;border-radius:6px;margin-top:10px;border:1px solid var(--line);display:block}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chips button{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:4px 12px;cursor:pointer;font-size:14px}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.empty{border:2px dashed var(--line);border-radius:8px;padding:32px 20px;text-align:center;color:var(--muted)}
+.empty h3{color:var(--ink);font-size:24px;margin-bottom:6px}
+.empty .row{justify-content:center;margin-top:14px}
+.group{margin-bottom:22px}
+.group > h3{font-size:22px;margin-bottom:8px;display:flex;gap:10px;align-items:baseline}
+
+/* Overview */
+.hero{display:grid;gap:18px;margin-bottom:22px}
+.hero h1{font-size:clamp(40px,8vw,72px);font-weight:700;letter-spacing:-.01em}
+.hero .addr{color:var(--muted);font-size:18px;margin-top:6px}
+.budgetbar{height:28px;display:flex;border-radius:4px;overflow:hidden;background:var(--chip);border:1px solid var(--line)}
+.budgetbar i{display:block;height:100%}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:15px}
+.legend div{display:flex;flex-direction:column}
+.legend b{font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.ov{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.ov h3{font-size:22px;margin-bottom:8px}
+.ov ul{list-style:none;margin:0;padding:0}
+.ov li{padding:8px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.ov li:first-child{border-top:0}
+.ov li button{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink)}
+
+/* Gantt */
+.gantt{display:grid;grid-template-columns:minmax(120px,190px) 1fr;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.g-labels{border-right:1px solid var(--line)}
+.g-labels .g-h,.g-canvas .g-h{height:46px;border-bottom:1px solid var(--line)}
+.g-label{height:40px;display:flex;flex-direction:column;justify-content:center;padding:0 10px;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.g-label b{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-label small{color:var(--muted);font-size:12px;line-height:1.2}
+.g-scroll{overflow-x:auto}
+.g-canvas{position:relative}
+.g-month{position:absolute;top:4px;font-size:13px;font-weight:600;white-space:nowrap;padding-left:4px;border-left:1px solid var(--line)}
+.g-week{position:absolute;top:24px;font-size:11px;color:var(--muted);padding-left:3px}
+.g-row{height:40px;border-bottom:1px solid var(--line);position:relative}
+.g-bar{position:absolute;top:9px;height:22px;border-radius:4px;cursor:pointer;border:0;padding:0;overflow:hidden;min-width:6px}
+.g-bar i{position:absolute;inset:0 auto 0 0;background:rgba(0,0,0,.28)}
+.g-today{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:2}
+.g-today span{position:absolute;top:2px;left:4px;font-size:11px;font-weight:600;background:var(--accent);color:var(--accent-ink);padding:0 4px;border-radius:3px;white-space:nowrap}
+.g-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.g-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* Table */
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:15px}
+th{font-weight:600;color:var(--muted);font-size:13px;background:var(--paper)}
+td.n,th.n{text-align:right}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--paper)}
+tfoot td{font-weight:600;border-bottom:0;background:var(--paper)}
+.neg{color:var(--bad)}.pos{color:var(--good)}
+
+/* Modal */
+dialog{border:0;padding:0;background:var(--surface);color:var(--ink);width:min(640px,100%);max-height:92vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,14,16,.55)}
+@media (max-width:640px){dialog{margin:auto 0 0;max-width:100%;border-radius:14px 14px 0 0;max-height:94vh}}
+.m-head{position:sticky;top:0;background:var(--surface);padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:1}
+.m-head h2{font-size:26px}
+.m-body{padding:14px 18px;display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.m-foot{position:sticky;bottom:0;background:var(--surface);padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.f{display:flex;flex-direction:column;gap:4px;grid-column:span 2}
+.f.half{grid-column:span 1}
+@media (max-width:420px){.f.half{grid-column:span 2}}
+.f label{font-size:14px;font-weight:500;color:var(--muted)}
+.f input,.f select,.f textarea{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:9px 10px;width:100%}
+.f textarea{min-height:96px;resize:vertical}
+.uploading{font-size:14px;color:var(--muted)}
+.err{color:var(--bad);font-size:14px}
+.auth{max-width:440px;margin:8vh auto 0}.auth h1{font-size:44px;margin-bottom:8px}.auth form{display:grid;gap:10px;margin-top:18px}.auth input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:11px 12px;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;z-index:50;font-size:15px;max-width:90vw}
+@media (prefers-reduced-motion:no-preference){dialog[open]{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:0}}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brand"><b id="brandName">Renovation portal</b><span id="brandSub"></span></div><button class="btn ghost" id="signOut" hidden>Sign out</button></div>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  </div>
+</header>
+<main id="main"></main>
+<dialog id="dlg"></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+"use strict";
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v => (v === "" || v == null || isNaN(+v)) ? 0 : +v;
+const money = v => (v === "" || v == null || isNaN(+v)) ? "—" : (+v < 0 ? "−$" : "$") + Math.abs(+v).toLocaleString(undefined,{maximumFractionDigits:0});
+const D = s => new Date(s + "T00:00:00");
+const iso = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const todayISO = () => iso(new Date());
+const addDays = (s, n) => { const d = D(s); d.setDate(d.getDate()+n); return iso(d); };
+const daysBetween = (a, b) => Math.round((D(b) - D(a)) / 864e5);
+const fmtDate = s => s ? D(s).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : "";
+const fmtShort = s => s ? D(s).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "";
+const sum = (arr, f) => arr.reduce((a, x) => a + num(f(x)), 0);
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
+
+// ---------- schema ----------
+const TRADES = ["Design & architecture","Engineering","Permits & fees","Demolition","Excavation & foundation","Framing","Roofing","Windows & doors","Siding & exterior","Plumbing","Electrical","HVAC","Insulation","Drywall","Flooring","Tile","Cabinetry","Countertops","Paint","Trim & finish carpentry","Fixtures & appliances","Landscaping","Cleanup & disposal","Contingency"];
+const PHASES = ["Design","Permits","Site work","Structure","Envelope","Rough-ins","Inspections","Finishes","Closeout"];
+const PHASE_COLORS = ["#5B7DB1","#A3864B","#7A9A5B","#B5624E","#4C9A9A","#8C6BB1","#C08A3E","#6E8F7A","#7B8794"];
+const phaseColor = p => PHASE_COLORS[Math.max(0, PHASES.indexOf(p)) % PHASE_COLORS.length];
+
+const S = {
+  quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade so you can compare them side by side.", fields:[
+    {k:"vendor",l:"Contractor or vendor",t:"text",req:1},
+    {k:"trade",l:"Trade or scope",t:"text",list:"trades",half:1},
+    {k:"amount",l:"Amount",t:"money",half:1},
+    {k:"date",l:"Date received",t:"date",half:1},
+    {k:"validUntil",l:"Valid until",t:"date",half:1},
+    {k:"status",l:"Status",t:"select",o:["Received","Under review","Accepted","Declined"],half:1},
+    {k:"contact",l:"Contact",t:"text",half:1,ph:"Phone or email"},
+    {k:"notes",l:"Inclusions, exclusions, payment terms",t:"textarea"},
+    {k:"files",l:"Quote documents",t:"files"}]},
+  tasks:{title:"Timeline", one:"task", blurb:"Your schedule as a Gantt chart. Tap any bar to update dates or progress.", fields:[
+    {k:"name",l:"Task",t:"text",req:1},
+    {k:"phase",l:"Phase",t:"select",o:PHASES,half:1},
+    {k:"owner",l:"Who's responsible",t:"text",half:1},
+    {k:"start",l:"Start",t:"date",req:1,half:1},
+    {k:"end",l:"Finish",t:"date",req:1,half:1},
+    {k:"progress",l:"Progress (%)",t:"number",half:1,min:0,max:100},
+    {k:"notes",l:"Notes",t:"textarea"}]},
+  conversations:{title:"Conversations", one:"conversation", blurb:"A running log of what you discussed and decided with your team.", fields:[
+    {k:"date",l:"Date",t:"date",req:1,half:1},
+    {k:"method",l:"How",t:"select",o:["Meeting","Site visit","Phone call","Email","Text message","Video call"],half:1},
+    {k:"person",l:"Who",t:"text",req:1,half:1,list:"people"},
+    {k:"role",l:"Role",t:"select",o:["Designer","Architect","General contractor","Engineer","Subcontractor","Supplier","Inspector","Lender","Other"],half:1},
+    {k:"subject",l:"Subject",t:"text"},
+    {k:"notes",l:"What was discussed and decided",t:"textarea"},
+    {k:"followUp",l:"Follow-up needed",t:"text"},
+    {k:"followUpDate",l:"Follow up by",t:"date",half:1},
+    {k:"files",l:"Attachments (emails, sketches, photos)",t:"files"}]},
+  plans:{title:"Plans", one:"plan revision", blurb:"Drawings grouped by sheet, newest revision on top and the full history underneath.", fields:[
+    {k:"sheet",l:"Drawing or sheet",t:"text",req:1,list:"sheets",ph:"e.g. A-101 Main floor plan"},
+    {k:"revision",l:"Revision",t:"text",half:1,ph:"e.g. Rev B"},
+    {k:"date",l:"Revision date",t:"date",half:1},
+    {k:"discipline",l:"Discipline",t:"select",o:["Architectural","Structural","Mechanical","Electrical","Plumbing","Site & survey","Interior design"],half:1},
+    {k:"status",l:"Status",t:"select",o:["Draft","For review","Submitted for permit","Approved","Issued for construction","Superseded"],half:1},
+    {k:"author",l:"Prepared by",t:"text"},
+    {k:"notes",l:"What changed in this revision",t:"textarea"},
+    {k:"files",l:"Drawing files",t:"files"}]},
+  materials:{title:"Materials", one:"material", blurb:"Selections and orders with quantities, costs, lead times and where they go.", fields:[
+    {k:"item",l:"Item",t:"text",req:1},
+    {k:"category",l:"Category",t:"select",o:["Lumber & framing","Roofing","Windows & doors","Insulation","Drywall","Flooring","Tile","Cabinetry","Countertops","Plumbing fixtures","Lighting & electrical","Appliances","Paint","Hardware","Exterior","Other"],half:1},
+    {k:"room",l:"Room or area",t:"text",half:1,list:"rooms"},
+    {k:"supplier",l:"Supplier",t:"text",half:1},
+    {k:"sku",l:"Model or SKU",t:"text",half:1},
+    {k:"qty",l:"Quantity",t:"number",half:1},
+    {k:"unit",l:"Unit",t:"text",half:1,ph:"sq ft, each, box"},
+    {k:"unitCost",l:"Cost per unit",t:"money",half:1},
+    {k:"status",l:"Status",t:"select",o:["Specified","Quoted","Ordered","Delivered","Installed"],half:1},
+    {k:"leadTime",l:"Lead time",t:"text",half:1,ph:"e.g. 6 weeks"},
+    {k:"needBy",l:"Needed on site by",t:"date",half:1},
+    {k:"link",l:"Product link",t:"url"},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Spec sheets, photos, receipts",t:"files"}]},
+  budget:{title:"Budget", one:"line item", blurb:"Each line item's budget against what's contracted and what's been paid.", fields:[
+    {k:"category",l:"Category",t:"text",req:1,list:"trades"},
+    {k:"item",l:"Description",t:"text"},
+    {k:"budgeted",l:"Budgeted",t:"money",half:1},
+    {k:"committed",l:"Committed (contracted)",t:"money",half:1},
+    {k:"paid",l:"Paid to date",t:"money",half:1},
+    {k:"vendor",l:"Vendor",t:"text",half:1},
+    {k:"notes",l:"Notes",t:"textarea"}]},
+  changeOrders:{title:"Change orders", one:"change order", blurb:"Changes to scope, cost and schedule after contracts are signed.", fields:[
+    {k:"number",l:"Number",t:"text",half:1},
+    {k:"date",l:"Date",t:"date",half:1},
+    {k:"title",l:"What's changing",t:"text",req:1},
+    {k:"requestedBy",l:"Requested by",t:"text",half:1},
+    {k:"reason",l:"Reason",t:"select",o:["Owner request","Unforeseen condition","Design change","Code requirement","Contractor error","Material substitution"],half:1},
+    {k:"costImpact",l:"Cost impact (use − for credits)",t:"money",half:1},
+    {k:"daysImpact",l:"Schedule impact (days)",t:"number",half:1},
+    {k:"status",l:"Status",t:"select",o:["Pending","Approved","Rejected"],half:1},
+    {k:"notes",l:"Details",t:"textarea"},
+    {k:"files",l:"Signed change order, backup",t:"files"}]}
+};
+const PROJECT = {title:"Project", one:"project details", fields:[
+  {k:"name",l:"Project name",t:"text",req:1,ph:"e.g. Maple St. kitchen + rear addition"},
+  {k:"address",l:"Address",t:"text"},
+  {k:"budget",l:"Total budget",t:"money",half:1},
+  {k:"contingency",l:"Contingency (%)",t:"number",half:1},
+  {k:"start",l:"Start date",t:"date",half:1},
+  {k:"end",l:"Target completion",t:"date",half:1},
+  {k:"notes",l:"Scope summary",t:"textarea"}]};
+const COLS = Object.keys(S);
+const VIEWS = ["overview","tasks","quotes","budget","changeOrders","materials","plans","conversations"];
+
+// ---------- Supabase settings: paste your project's values here ----------
+const SUPABASE_URL = "https://sqvzsslzbtzdqdclunbt.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ljxckw7bHq_vnmLZWZNJDg_ukzpSh7m";
+const BUCKET = "portal-files";
+const MAX_MB = 50;
+
+// ---------- state ----------
+const data = Object.fromEntries(COLS.map(c => [c, []]));
+let project = {}, projectId = null;
+let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
+const filters = {plans:"All", conversations:"All", materials:"All"};
+const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
+
+// ---------- persistence ----------
+const run = async p => { const {error} = await p; if(error) throw error; };
+async function loadAll(){
+  const {data: rows, error} = await sb.from("records").select("id,collection,data").order("created_at");
+  if(error){ toast("Couldn't load your records. Reload the page to try again."); return; }
+  COLS.forEach(c => data[c] = []); project = {}; projectId = null;
+  rows.forEach(r => {
+    if(r.collection === "project"){ project = {...r.data}; projectId = r.id; }
+    else if(data[r.collection]) data[r.collection].push({...r.data, id: r.id});
+  });
+  live = true; render();
+}
+async function save(col, id, body){
+  const stamp = {updated_at: new Date().toISOString()};
+  if(col === "project"){
+    if(projectId) await run(sb.from("records").update({data: body, ...stamp}).eq("id", projectId));
+    else await run(sb.from("records").insert({collection: "project", data: body}));
+  } else if(id) await run(sb.from("records").update({data: body, ...stamp}).eq("id", id));
+  else await run(sb.from("records").insert({collection: col, data: body}));
+  await loadAll();
+}
+async function insertMany(col, bodies){
+  await run(sb.from("records").insert(bodies.map(b => ({collection: col, data: b}))));
+  await loadAll();
+}
+async function removeFiles(files){
+  const paths = (files || []).map(f => f.path).filter(Boolean);
+  if(paths.length) await sb.storage.from(BUCKET).remove(paths);
+}
+async function remove(col, id){
+  const rec = data[col].find(x => x.id === id);
+  await run(sb.from("records").delete().eq("id", id));
+  await removeFiles(rec && rec.files).catch(() => {});
+  await loadAll();
+}
+
+// Signed links for private files, fetched in batches and cached for the visit
+const urlCache = {}; const pendingUrls = new Set(); let urlTimer = null;
+function fileUrl(path){
+  if(!path) return "";
+  if(urlCache[path]) return urlCache[path];
+  pendingUrls.add(path);
+  if(!urlTimer) urlTimer = setTimeout(fetchUrls, 0);
+  return "";
+}
+async function fetchUrls(){
+  urlTimer = null;
+  const paths = [...pendingUrls]; pendingUrls.clear();
+  if(!paths.length) return;
+  const {data: res, error} = await sb.storage.from(BUCKET).createSignedUrls(paths, 60 * 60 * 6);
+  if(error) paths.forEach(p => urlCache[p] = "#");
+  else res.forEach((r, i) => urlCache[r.path || paths[i]] = r.signedUrl || "#");
+  render();
+}
+
+async function startSession(){
+  if(started) return; started = true;
+  const {data: ok, error} = await sb.rpc("is_member");
+  member = !error && ok === true; canWrite = member;
+  if(!member){ connecting = false; render(); return; }
+  await loadAll();
+  connecting = false;
+  let t = null;
+  sb.channel("records-changes")
+    .on("postgres_changes", {event: "*", schema: "public", table: "records"}, () => { clearTimeout(t); t = setTimeout(loadAll, 400); })
+    .subscribe();
+}
+
+async function init(){
+  if(!configured){ connecting = false; render(); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const {data: {session: s}} = await sb.auth.getSession();
+  session = s;
+  sb.auth.onAuthStateChange((ev, s2) => {
+    session = s2;
+    if(ev === "SIGNED_OUT"){ location.reload(); return; }
+    if(s2) setTimeout(startSession, 0);
+  });
+  if(session) await startSession(); else { connecting = false; render(); }
+}
+
+function authScreen(){
+  if(!configured) return `<div class="auth"><h1>Almost there</h1><p>Open <b>index.html</b> and paste your Supabase project URL and key into the two lines near the top marked "Supabase settings."</p></div>`;
+  if(connecting) return `<div class="auth"><p class="meta">Loading…</p></div>`;
+  if(!session) return `<div class="auth"><h1>Sign in</h1><p class="meta">Enter your email and we'll send you a sign-in link. Only people on this portal's member list can see the project.</p>
+    <form id="authForm"><input type="email" id="authEmail" required placeholder="you@example.com" autocomplete="email" aria-label="Email"><button class="btn primary" type="submit">Email me a sign-in link</button></form>
+    <p class="meta" id="authMsg">${esc(authMsg)}</p></div>`;
+  if(member === false) return `<div class="auth"><h1>No access yet</h1><p>${esc(session.user.email)} isn't on this portal's member list. Ask the owner to add your email, then reload this page.</p></div>`;
+  return "";
+}
+
+// ---------- rendering ----------
+function render(){
+  $("#brandName").textContent = project.name || "Renovation portal";
+  $("#brandSub").textContent = project.address || "";
+  document.title = project.name ? project.name + " · portal" : "Renovation portal";
+  const counts = {quotes:data.quotes.length, changeOrders:data.changeOrders.filter(c => c.status === "Pending").length};
+  $("#tabs").innerHTML = VIEWS.map(v => {
+    const label = v === "overview" ? "Overview" : S[v].title;
+    const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : "";
+    return `<button data-view="${v}" ${v === view ? 'aria-current="page"' : ""}>${label}${c}</button>`;
+  }).join("");
+  const m = $("#main");
+  $("#signOut").hidden = !session;
+  const gate = authScreen();
+  $("#tabs").hidden = !!gate;
+  if(gate){ m.innerHTML = gate; return; }
+  let banner = "";
+  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, conversations:vConversations}[view];
+  m.innerHTML = banner + fn();
+}
+
+function head(col, extra = ""){
+  const s = S[col];
+  return `<div class="viewhead"><div><h2>${s.title}</h2><p>${s.blurb}</p></div>
+    <div class="row">${extra}${canWrite ? `<button class="btn primary" data-add="${col}">Add ${s.one}</button>` : ""}</div></div>`;
+}
+function empty(col, title, text, extra = ""){
+  return `<div class="empty"><h3>${title}</h3><p>${text}</p><div class="row">${canWrite ? `<button class="btn primary" data-add="${col}">Add ${S[col].one}</button>` : ""}${extra}</div></div>`;
+}
+function filesHTML(files){
+  if(!files || !files.length) return "";
+  return `<div class="files">${files.map(f => `<a class="file" href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener" data-stop>${fileIcon(f.type)}<span>${esc(f.name)}</span></a>`).join("")}</div>`;
+}
+function firstImage(files){
+  const f = (files || []).find(f => (f.type || "").startsWith("image/"));
+  const u = f && fileUrl(f.path);
+  return u && u !== "#" ? `<img class="thumb" src="${esc(u)}" alt="${esc(f.name)}" loading="lazy">` : "";
+}
+function fileIcon(t){ t = t || ""; return t.includes("pdf") ? "📄" : (t.includes("sheet") || t.includes("excel") || t.includes("csv")) ? "📊" : (t.includes("word") || t.includes("document")) ? "📝" : t.startsWith("image/") ? "🖼️" : t.startsWith("video/") ? "🎞️" : "📎"; }
+function badge(text, kind){ return text ? `<span class="badge ${kind || ""}">${esc(text)}</span>` : ""; }
+const statusKind = s => ({Accepted:"good",Approved:"good",Installed:"good",Delivered:"good","Issued for construction":"good",Declined:"bad",Rejected:"bad",Superseded:"bad",Pending:"warn","Under review":"warn","For review":"warn",Ordered:"warn"}[s] || "");
+
+// ---- Overview ----
+function money3(){
+  const lineBudget = sum(data.budget, b => b.budgeted);
+  const budget = num(project.budget) || lineBudget;
+  const coApproved = sum(data.changeOrders.filter(c => c.status === "Approved"), c => c.costImpact);
+  const committed = sum(data.budget, b => b.committed) + coApproved;
+  const paid = sum(data.budget, b => b.paid);
+  return {budget, lineBudget, coApproved, committed, paid};
+}
+function vOverview(){
+  const t = todayISO();
+  const {budget, committed, paid, coApproved} = money3();
+  const scale = Math.max(budget, committed, paid, 1);
+  const pPaid = paid / scale * 100, pCom = Math.max(0, committed - paid) / scale * 100;
+  const remaining = budget - committed;
+
+  let schedLine = "";
+  const tasks = data.tasks.filter(x => x.start && x.end);
+  const pStart = project.start || (tasks.length ? tasks.map(x => x.start).sort()[0] : "");
+  const pEnd = project.end || (tasks.length ? tasks.map(x => x.end).sort().slice(-1)[0] : "");
+  if(pStart && pEnd){
+    const total = Math.max(1, Math.ceil(daysBetween(pStart, pEnd) / 7));
+    const wk = Math.ceil((daysBetween(pStart, t) + 1) / 7);
+    schedLine = t < pStart ? `Starts ${fmtDate(pStart)}, ${total} weeks planned` : t > pEnd ? `Planned finish was ${fmtDate(pEnd)}` : `Week ${wk} of ${total}, finishing ${fmtDate(pEnd)}`;
+  }
+  const hero = project.name
+    ? `<div><h1>${esc(project.name)}</h1><div class="addr">${esc(project.address || "")}${project.address && schedLine ? "<br>" : ""}${esc(schedLine)}</div></div>`
+    : `<div><h1>Your renovation</h1><div class="addr">Start by naming the project and setting a budget.</div></div>`;
+
+  const now = tasks.filter(x => x.start <= t && x.end >= t);
+  const next = tasks.filter(x => x.start > t).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 4);
+  const li = (col, x, left, right) => `<li><button data-edit="${col}" data-id="${esc(x.id)}">${left}</button><span class="meta">${right}</span></li>`;
+  const pendQ = data.quotes.filter(q => q.status === "Received" || q.status === "Under review" || !q.status);
+  const pendCO = data.changeOrders.filter(c => c.status === "Pending");
+  const follow = data.conversations.filter(c => c.followUp).sort((a, b) => (a.followUpDate || "9").localeCompare(b.followUpDate || "9")).slice(0, 5);
+  const mats = data.materials.filter(m => m.status === "Specified" || m.status === "Quoted" || !m.status).sort((a, b) => (a.needBy || "9").localeCompare(b.needBy || "9")).slice(0, 5);
+  const recent = data.conversations.slice().sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 4);
+
+  const list = (title, items, emptyText) => `<div class="panel"><h3>${title}</h3>${items.length ? `<ul>${items.join("")}</ul>` : `<p class="meta">${emptyText}</p>`}</div>`;
+
+  return `<section class="hero">${hero}
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="font-size:22px">Budget</h3>${canWrite ? `<button class="btn ghost" data-project>Edit project details</button>` : ""}</div>
+      <div class="budgetbar" role="img" aria-label="Paid ${money(paid)}, committed ${money(committed)} of ${money(budget)} budget">
+        <i style="width:${pPaid}%;background:var(--ink)"></i><i style="width:${pCom}%;background:var(--accent)"></i>
+      </div>
+      <div class="legend">
+        <div><span><span class="sw" style="background:var(--line);border:1px solid var(--muted)"></span>Budget</span><b>${money(budget)}</b></div>
+        <div><span><span class="sw" style="background:var(--accent)"></span>Committed</span><b>${money(committed)}</b></div>
+        <div><span><span class="sw" style="background:var(--ink)"></span>Paid</span><b>${money(paid)}</b></div>
+        <div><span>${remaining < 0 ? "Over budget" : "Uncommitted"}</span><b class="${remaining < 0 ? "neg" : ""}">${money(Math.abs(remaining))}</b></div>
+      </div>
+      ${coApproved ? `<p class="meta" style="margin:8px 0 0">Committed includes ${money(coApproved)} in approved change orders.</p>` : ""}
+    </div></section>
+    <div class="ov">
+      ${list("Happening now", now.map(x => li("tasks", x, esc(x.name), `${x.progress ? num(x.progress) + "% · " : ""}until ${fmtShort(x.end)}`)), "Nothing scheduled for today.")}
+      ${list("Coming up", next.map(x => li("tasks", x, esc(x.name), "starts " + fmtShort(x.start))), "Add tasks in Timeline to see what's next.")}
+      ${list("Decisions waiting", [
+          ...pendQ.slice(0, 4).map(q => li("quotes", q, `Quote: ${esc(q.vendor)}${q.trade ? " (" + esc(q.trade) + ")" : ""}`, money(q.amount))),
+          ...pendCO.map(c => li("changeOrders", c, `Change order: ${esc(c.title)}`, money(c.costImpact)))
+        ], "No open quotes or change orders.")}
+      ${list("Follow-ups", follow.map(c => li("conversations", c, `${esc(c.followUp)} <span class="meta">(${esc(c.person)})</span>`, c.followUpDate ? (c.followUpDate < t ? `<span class="neg">overdue</span>` : "by " + fmtShort(c.followUpDate)) : "")), "No follow-ups logged.")}
+      ${list("Materials to order", mats.map(m => li("materials", m, esc(m.item), m.needBy ? "need by " + fmtShort(m.needBy) : esc(m.leadTime || ""))), "Everything selected has been ordered.")}
+      ${list("Latest conversations", recent.map(c => li("conversations", c, `${esc(c.person)}: ${esc(c.subject || c.method || "")}`, fmtShort(c.date))), "Log calls, meetings and site visits in Conversations.")}
+    </div>`;
+}
+
+// ---- Timeline ----
+function vTimeline(){
+  const tasks = data.tasks.filter(x => x.start && x.end).sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+  const starter = canWrite ? `<button class="btn" data-starter="tasks">Load a typical renovation schedule</button>` : "";
+  if(!tasks.length) return head("tasks") + empty("tasks", "No schedule yet", "Add tasks one at a time, or start from a typical renovation-with-addition sequence and adjust the dates.", starter);
+  let min = tasks[0].start, max = tasks.reduce((m, x) => x.end > m ? x.end : m, tasks[0].end);
+  const md = D(min); md.setDate(md.getDate() - ((md.getDay() + 6) % 7)); min = iso(md); // back to Monday
+  max = addDays(max, 10);
+  const dayW = 7, days = daysBetween(min, max) + 1, W = days * dayW;
+  let headHTML = "";
+  for(let i = 0; i < days; i++){
+    const d = D(addDays(min, i));
+    if(d.getDate() === 1 || i === 0) headHTML += `<div class="g-month" style="left:${i*dayW}px">${d.toLocaleDateString(undefined,{month:"short",year: d.getMonth() === 0 || i === 0 ? "numeric" : undefined})}</div>`;
+    if(i % 7 === 0) headHTML += `<div class="g-week" style="left:${i*dayW}px">${d.getDate()}</div>`;
+  }
+  const grid = `background-image:repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px ${7*dayW}px)`;
+  const t = todayISO();
+  const today = (t >= min && t <= max) ? `<div class="g-today" style="left:${daysBetween(min, t)*dayW}px"><span>Today</span></div>` : "";
+  const labels = tasks.map(x => `<button class="g-label" data-edit="tasks" data-id="${esc(x.id)}"><b>${esc(x.name)}</b><small>${fmtShort(x.start)} – ${fmtShort(x.end)}</small></button>`).join("");
+  const rows = tasks.map(x => {
+    const l = daysBetween(min, x.start) * dayW, w = (daysBetween(x.start, x.end) + 1) * dayW;
+    return `<div class="g-row" style="${grid}"><button class="g-bar" style="left:${l}px;width:${w}px;background:${phaseColor(x.phase)}" data-edit="tasks" data-id="${esc(x.id)}" aria-label="${esc(x.name)}, ${num(x.progress)}% complete"><i style="width:${Math.min(100, num(x.progress))}%"></i></button></div>`;
+  }).join("");
+  const used = PHASES.filter(p => tasks.some(x => x.phase === p));
+  const late = tasks.filter(x => x.end < t && num(x.progress) < 100).length;
+  return head("tasks") + `
+    ${late ? `<p class="banner">${late} task${late > 1 ? "s are" : " is"} past the finish date and not marked 100% complete.</p>` : ""}
+    <div class="gantt">
+      <div class="g-labels"><div class="g-h"></div>${labels}</div>
+      <div class="g-scroll" id="gscroll"><div class="g-canvas" style="width:${W}px"><div class="g-h" style="position:relative">${headHTML}</div>${rows}${today}</div></div>
+    </div>
+    <div class="g-legend">${used.map(p => `<span><i style="background:${phaseColor(p)}"></i>${p}</span>`).join("")}<span>Darker fill shows progress</span></div>`;
+}
+
+// ---- Quotes ----
+function vQuotes(){
+  if(!data.quotes.length) return head("quotes") + empty("quotes", "No quotes yet", "Add each bid as it comes in and attach the PDF or photo of the quote.");
+  const groups = {};
+  data.quotes.forEach(q => (groups[q.trade || "Other"] ||= []).push(q));
+  const accepted = sum(data.quotes.filter(q => q.status === "Accepted"), q => q.amount);
+  return head("quotes") + `<p class="meta" style="margin-top:-6px">${data.quotes.length} quotes across ${Object.keys(groups).length} trades. Accepted total ${money(accepted)}.</p>` +
+    Object.keys(groups).sort().map(g => {
+      const qs = groups[g].sort((a, b) => num(a.amount) - num(b.amount));
+      const priced = qs.filter(q => num(q.amount) > 0 && q.status !== "Declined");
+      const low = priced[0], high = priced[priced.length - 1];
+      return `<div class="group"><h3>${esc(g)} <span class="meta">${qs.length} quote${qs.length > 1 ? "s" : ""}${priced.length > 1 ? ` · spread ${money(num(high.amount) - num(low.amount))}` : ""}</span></h3><div class="grid">${qs.map(q => `
+        <div class="card" data-edit="quotes" data-id="${esc(q.id)}" tabindex="0" role="button">
+          <div class="row" style="justify-content:space-between"><h3>${esc(q.vendor)}</h3>${badge(q.status || "Received", statusKind(q.status))}</div>
+          <div class="amount">${money(q.amount)}</div>
+          <div class="meta">${q.date ? "Received " + fmtDate(q.date) : ""}${q.validUntil ? ` · valid until ${fmtDate(q.validUntil)}` : ""}${priced.length > 1 && q === low ? ` · <b class="pos">lowest</b>` : ""}</div>
+          ${q.notes ? `<p class="notes">${esc(q.notes)}</p>` : ""}${filesHTML(q.files)}
+        </div>`).join("")}</div></div>`;
+    }).join("");
+}
+
+// ---- Budget ----
+function vBudget(){
+  const starter = canWrite ? `<button class="btn" data-starter="budget">Add standard categories</button>` : "";
+  if(!data.budget.length) return head("budget") + empty("budget", "No line items yet", "Add line items yourself or start with standard renovation categories and fill in the numbers.", starter);
+  const rows = data.budget.slice().sort((a, b) => (a.category || "").localeCompare(b.category || ""));
+  const {budget, lineBudget, coApproved, committed, paid} = money3();
+  const tb = lineBudget, tc = sum(rows, r => r.committed);
+  const body = rows.map(r => {
+    const variance = num(r.budgeted) - num(r.committed);
+    return `<tr data-edit="budget" data-id="${esc(r.id)}"><td>${esc(r.category)}</td><td>${esc(r.item || "")}<div class="meta">${esc(r.vendor || "")}</div></td>
+      <td class="n">${money(r.budgeted)}</td><td class="n">${money(r.committed)}</td><td class="n">${money(r.paid)}</td>
+      <td class="n">${money(num(r.committed) - num(r.paid))}</td><td class="n ${num(r.committed) ? (variance < 0 ? "neg" : "pos") : ""}">${num(r.committed) ? money(variance) : "—"}</td></tr>`;
+  }).join("");
+  const coRow = data.changeOrders.length ? `<tr data-view="changeOrders"><td>Change orders</td><td class="meta">Approved only</td><td class="n">—</td><td class="n">${money(coApproved)}</td><td class="n">—</td><td class="n">—</td><td class="n ${coApproved > 0 ? "neg" : ""}">${money(-coApproved)}</td></tr>` : "";
+  const contingency = num(project.contingency) ? `<p class="meta">Contingency set at ${num(project.contingency)}% (${money(budget * num(project.contingency) / 100)}) of the total budget.</p>` : "";
+  return head("budget") + `
+    ${num(project.budget) && Math.abs(num(project.budget) - tb) > 1 ? `<p class="banner">Line items add up to ${money(tb)}; your total project budget is ${money(project.budget)}.</p>` : ""}
+    <div class="tablewrap"><table>
+      <thead><tr><th>Category</th><th>Description</th><th class="n">Budgeted</th><th class="n">Committed</th><th class="n">Paid</th><th class="n">Still owed</th><th class="n">Variance</th></tr></thead>
+      <tbody>${body}${coRow}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="n">${money(tb)}</td><td class="n">${money(committed)}</td><td class="n">${money(paid)}</td><td class="n">${money(committed - paid)}</td><td class="n ${tb - committed < 0 ? "neg" : "pos"}">${money(tb - committed)}</td></tr></tfoot>
+    </table></div>${contingency}<p class="meta">Variance is budgeted minus committed for lines that have a contract amount. Tap a row to edit.</p>`;
+}
+
+// ---- Change orders ----
+function vChangeOrders(){
+  if(!data.changeOrders.length) return head("changeOrders") + empty("changeOrders", "No change orders", "When scope, price or schedule changes after a contract is signed, record it here with the signed paperwork.");
+  const list = data.changeOrders.slice().sort((a, b) => (b.number || "").localeCompare(a.number || "", undefined, {numeric:true}));
+  const ap = list.filter(c => c.status === "Approved"), pe = list.filter(c => c.status === "Pending");
+  return head("changeOrders") + `<p class="meta" style="margin-top:-6px">Approved: ${money(sum(ap, c => c.costImpact))} and ${sum(ap, c => c.daysImpact)} days. Pending: ${money(sum(pe, c => c.costImpact))} and ${sum(pe, c => c.daysImpact)} days.</p>
+    <div class="grid">${list.map(c => `<div class="card" data-edit="changeOrders" data-id="${esc(c.id)}" tabindex="0" role="button">
+      <div class="row" style="justify-content:space-between"><span class="meta">${esc(c.number || "")}${c.date ? " · " + fmtDate(c.date) : ""}</span>${badge(c.status || "Pending", statusKind(c.status || "Pending"))}</div>
+      <h3>${esc(c.title)}</h3>
+      <div class="row" style="gap:16px"><span class="amount ${num(c.costImpact) < 0 ? "pos" : ""}">${num(c.costImpact) > 0 ? "+" : ""}${money(c.costImpact)}</span>${num(c.daysImpact) ? `<span class="meta">${num(c.daysImpact) > 0 ? "+" : ""}${num(c.daysImpact)} days</span>` : ""}</div>
+      <div class="meta">${esc([c.reason, c.requestedBy && "requested by " + c.requestedBy].filter(Boolean).join(", "))}</div>
+      ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ""}${filesHTML(c.files)}</div>`).join("")}</div>`;
+}
+
+// ---- Materials ----
+function chips(key, options){
+  return `<div class="chips">${["All", ...options].map(o => `<button data-filter="${key}" data-val="${esc(o)}" aria-pressed="${filters[key] === o}">${esc(o)}</button>`).join("")}</div>`;
+}
+function vMaterials(){
+  if(!data.materials.length) return head("materials") + empty("materials", "No materials yet", "Track every selection, from lumber to light fixtures, with costs and lead times.");
+  const cats = [...new Set(data.materials.map(m => m.category || "Other"))].sort();
+  const list = data.materials.filter(m => filters.materials === "All" || (m.category || "Other") === filters.materials)
+    .sort((a, b) => (a.category || "").localeCompare(b.category || "") || (a.item || "").localeCompare(b.item || ""));
+  const total = sum(list, m => num(m.qty) * num(m.unitCost));
+  return head("materials") + chips("materials", cats) + `<p class="meta" style="margin-top:-4px">${list.length} items, ${money(total)} total.</p>
+    <div class="grid">${list.map(m => `<div class="card" data-edit="materials" data-id="${esc(m.id)}" tabindex="0" role="button">
+      <div class="row" style="justify-content:space-between"><span class="meta">${esc(m.category || "")}${m.room ? " · " + esc(m.room) : ""}</span>${badge(m.status || "Specified", statusKind(m.status))}</div>
+      <h3>${esc(m.item)}</h3>
+      <div class="meta">${esc([m.supplier, m.sku].filter(Boolean).join(" · "))}</div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span>${m.qty ? esc(m.qty + " " + (m.unit || "")) + (m.unitCost ? " × " + money(m.unitCost) : "") : ""}</span><span class="amount">${num(m.qty) && num(m.unitCost) ? money(num(m.qty) * num(m.unitCost)) : ""}</span></div>
+      ${m.leadTime || m.needBy ? `<div class="meta">${m.leadTime ? "Lead time " + esc(m.leadTime) : ""}${m.leadTime && m.needBy ? " · " : ""}${m.needBy ? "need by " + fmtDate(m.needBy) : ""}</div>` : ""}
+      ${firstImage(m.files)}${m.link ? `<div class="files"><a class="file" href="${esc(m.link)}" target="_blank" rel="noopener" data-stop>🔗<span>Product page</span></a></div>` : ""}${filesHTML((m.files || []).filter(f => !(f.type || "").startsWith("image/")))}</div>`).join("")}</div>`;
+}
+
+// ---- Plans ----
+function vPlans(){
+  if(!data.plans.length) return head("plans") + empty("plans", "No drawings yet", "Upload each set or sheet as a PDF. When a new revision arrives, add it under the same sheet name to keep the history.");
+  const disc = [...new Set(data.plans.map(p => p.discipline).filter(Boolean))].sort();
+  const list = data.plans.filter(p => filters.plans === "All" || p.discipline === filters.plans);
+  const groups = {};
+  list.forEach(p => (groups[p.sheet] ||= []).push(p));
+  const sheets = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, {numeric:true}));
+  return head("plans") + (disc.length > 1 ? chips("plans", disc) : "") + `<div class="grid">${sheets.map(s => {
+    const revs = groups[s].sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.revision || "").localeCompare(a.revision || "", undefined, {numeric:true}));
+    const cur = revs[0], older = revs.slice(1);
+    return `<div class="panel">
+      <div class="card" style="border:0;padding:0" data-edit="plans" data-id="${esc(cur.id)}" tabindex="0" role="button">
+        <div class="row" style="justify-content:space-between"><span class="meta">${esc(cur.discipline || "")}</span>${badge(cur.status, statusKind(cur.status))}</div>
+        <h3>${esc(s)}</h3>
+        <div class="meta">${esc(cur.revision || "Current")}${cur.date ? " · " + fmtDate(cur.date) : ""}${cur.author ? " · " + esc(cur.author) : ""}</div>
+        ${cur.notes ? `<p class="notes">${esc(cur.notes)}</p>` : ""}${firstImage(cur.files)}${filesHTML(cur.files)}
+      </div>
+      ${older.length ? `<details style="margin-top:12px"><summary class="meta" style="cursor:pointer">Earlier revisions (${older.length})</summary>
+        ${older.map(r => `<div class="card" style="margin-top:8px;padding:10px 12px" data-edit="plans" data-id="${esc(r.id)}" tabindex="0" role="button"><b>${esc(r.revision || "Revision")}</b> <span class="meta">${fmtDate(r.date)}</span>${r.notes ? `<p class="notes" style="margin-top:4px">${esc(r.notes)}</p>` : ""}${filesHTML(r.files)}</div>`).join("")}
+      </details>` : ""}
+      ${canWrite ? `<button class="btn ghost" style="margin-top:8px" data-addrev="${esc(s)}" data-disc="${esc(cur.discipline || "")}">Add revision</button>` : ""}
+    </div>`;
+  }).join("")}</div>`;
+}
+
+// ---- Conversations ----
+function vConversations(){
+  if(!data.conversations.length) return head("conversations") + empty("conversations", "No conversations logged", "After each call, meeting or site visit, jot down who you talked to and what was decided.");
+  const roles = [...new Set(data.conversations.map(c => c.role).filter(Boolean))].sort();
+  const list = data.conversations.filter(c => filters.conversations === "All" || c.role === filters.conversations).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  return head("conversations") + (roles.length > 1 ? chips("conversations", roles) : "") + `<div style="display:grid;gap:10px;max-width:780px">${list.map(c => `
+    <div class="card" data-edit="conversations" data-id="${esc(c.id)}" tabindex="0" role="button">
+      <div class="meta">${fmtDate(c.date)}${c.method ? " · " + esc(c.method) : ""}</div>
+      <h3>${esc(c.person)}${c.role ? ` <span class="meta" style="font-family:Barlow,sans-serif;font-size:15px;font-weight:400">${esc(c.role)}</span>` : ""}</h3>
+      ${c.subject ? `<div style="font-weight:600">${esc(c.subject)}</div>` : ""}
+      ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ""}
+      ${c.followUp ? `<p class="notes"><span class="badge warn">Follow up${c.followUpDate ? " by " + fmtShort(c.followUpDate) : ""}</span> ${esc(c.followUp)}</p>` : ""}
+      ${filesHTML(c.files)}</div>`).join("")}</div>`;
+}
+
+// ---------- form ----------
+
+function datalists(){
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort();
+  const lists = {
+    trades: uniq([...TRADES, ...data.quotes.map(q => q.trade), ...data.budget.map(b => b.category)]),
+    people: uniq(data.conversations.map(c => c.person)),
+    sheets: uniq(data.plans.map(p => p.sheet)),
+    rooms: uniq(data.materials.map(m => m.room))
+  };
+  return Object.entries(lists).map(([k, v]) => `<datalist id="dl-${k}">${v.map(o => `<option value="${esc(o)}">`).join("")}</datalist>`).join("");
+}
+
+function openForm(col, rec, preset){
+  const sch = col === "project" ? PROJECT : S[col];
+  const r = rec ? {...rec} : {...(preset || {})};
+  let files = (r.files || []).slice();
+  const original = (r.files || []).slice();
+  const newUploads = []; let saved = false;
+  let uploading = 0;
+  const dlg = $("#dlg");
+  const fieldHTML = f => {
+    const v = r[f.k] ?? "";
+    const id = "f_" + f.k, cls = "f" + (f.half ? " half" : "");
+    if(f.t === "files"){
+      return `<div class="${cls}"><label>${f.l}</label><div class="files" id="fileList"></div>
+        ${canWrite ? `<input type="file" id="fileInput" multiple aria-label="${f.l}"><span class="meta" style="font-size:13px">Any file type up to ${MAX_MB} MB each: PDFs, photos, Word, Excel, CAD.</span><span class="uploading" id="upState"></span>` : ""}</div>`;
+    }
+    const dis = canWrite ? "" : "disabled";
+    if(f.t === "textarea") return `<div class="${cls}"><label for="${id}">${f.l}</label><textarea id="${id}" name="${f.k}" ${dis}>${esc(v)}</textarea></div>`;
+    if(f.t === "select") return `<div class="${cls}"><label for="${id}">${f.l}</label><select id="${id}" name="${f.k}" ${dis}><option value=""></option>${f.o.map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></div>`;
+    const type = f.t === "money" || f.t === "number" ? "number" : f.t === "url" ? "url" : f.t === "date" ? "date" : "text";
+    const extra = (f.t === "money" ? 'step="0.01" inputmode="decimal"' : f.t === "number" ? `step="any" inputmode="decimal" ${f.min != null ? `min="${f.min}"` : ""} ${f.max != null ? `max="${f.max}"` : ""}` : "") + (f.list ? ` list="dl-${f.list}"` : "");
+    return `<div class="${cls}"><label for="${id}">${f.l}${f.req ? "" : ""}</label><input id="${id}" name="${f.k}" type="${type}" value="${esc(v)}" ${f.req ? "required" : ""} placeholder="${esc(f.ph || "")}" ${extra} ${dis}></div>`;
+  };
+  dlg.innerHTML = `<form method="dialog" id="frm" novalidate>
+    <div class="m-head"><h2>${rec ? (canWrite ? "Edit " : "") + sch.one : "New " + sch.one}</h2><button type="button" class="btn ghost" id="xBtn" aria-label="Close">Close</button></div>
+    <div class="m-body">${sch.fields.map(fieldHTML).join("")}<p class="err f" id="formErr" hidden></p></div>
+    ${canWrite ? `<div class="m-foot">${rec && col !== "project" ? `<button type="button" class="btn danger" id="delBtn">Delete</button>` : "<span></span>"}<div class="row"><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="submit" class="btn primary" id="saveBtn">Save ${sch.one}</button></div></div>` : ""}
+  </form>${datalists()}`;
+  const renderFiles = () => {
+    const el = $("#fileList"); if(!el) return;
+    el.innerHTML = files.map((f, i) => `<span class="file">${fileIcon(f.type)}<a href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener"><span>${esc(f.name)}</span></a>${canWrite ? `<button type="button" class="btn ghost" data-rm="${i}" aria-label="Remove ${esc(f.name)}" style="padding:0 4px">×</button>` : ""}</span>`).join("") || `<span class="meta">No files attached.</span>`;
+    el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { files.splice(+b.dataset.rm, 1); renderFiles(); });
+  };
+  renderFiles();
+  const close = () => dlg.close();
+  dlg.onclose = () => { if(!saved) removeFiles(newUploads).catch(() => {}); dlg.onclose = null; };
+  $("#xBtn").onclick = close;
+  if($("#cancelBtn")) $("#cancelBtn").onclick = close;
+  const fi = $("#fileInput");
+  if(fi) fi.onchange = async () => {
+    const st = $("#upState");
+    for(const file of [...fi.files]){
+      if(file.size > MAX_MB * 1024 * 1024){ st.textContent = `${file.name} is over ${MAX_MB} MB. Compress it or split it into parts.`; continue; }
+      uploading++; st.textContent = `Uploading ${file.name}…`;
+      try {
+        const path = `${crypto.randomUUID()}/${file.name.replace(/[^\w.\-]+/g, "_")}`;
+        const {error} = await sb.storage.from(BUCKET).upload(path, file, {contentType: file.type || "application/octet-stream"});
+        if(error) throw error;
+        const {data: su} = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 6);
+        if(su && su.signedUrl) urlCache[path] = su.signedUrl;
+        const rec2 = {path, name: file.name, type: file.type || "", size: file.size};
+        files.push(rec2); newUploads.push(rec2);
+        renderFiles(); st.textContent = "";
+      } catch(e){
+        st.textContent = /size|large/i.test(e && e.message || "") ? `${file.name} is too large for your Supabase storage limit.` : `${file.name} didn't upload. Try again.`;
+      } finally { uploading--; }
+    }
+    fi.value = "";
+  };
+  if($("#delBtn")) $("#delBtn").onclick = async () => {
+    if(!confirm(`Delete this ${sch.one}? This can't be undone.`)) return;
+    try { await remove(col, rec.id); close(); toast(`Deleted ${sch.one}.`); } catch(e){ toast("Couldn't delete. Try again."); }
+  };
+  $("#frm").onsubmit = async ev => {
+    ev.preventDefault();
+    if(!canWrite) return close();
+    const err = $("#formErr");
+    if(uploading){ err.hidden = false; err.textContent = "Wait for uploads to finish before saving."; return; }
+    const body = {};
+    for(const f of sch.fields){
+      if(f.t === "files"){ body.files = files; continue; }
+      const el = dlg.querySelector(`[name="${f.k}"]`);
+      let v = el.value.trim();
+      if(f.req && !v){ err.hidden = false; err.textContent = `${f.l} is required.`; el.focus(); return; }
+      if(f.t === "money" || f.t === "number") v = v === "" ? "" : +v;
+      body[f.k] = v;
+    }
+    if(col === "tasks" && body.end < body.start){ err.hidden = false; err.textContent = "Finish date must be on or after the start date."; return; }
+    if(col === "tasks" && body.progress !== "") body.progress = Math.max(0, Math.min(100, body.progress));
+    body.updated = Date.now();
+    body.created = r.created || Date.now();
+    const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      await save(col, rec && rec.id, body); saved = true;
+      const keep = new Set(files.map(f => f.path));
+      removeFiles(original.filter(f => !keep.has(f.path))).catch(() => {});
+      close(); toast(`Saved ${sch.one}.`);
+    }
+    catch(e){ btn.disabled = false; btn.textContent = `Save ${sch.one}`; err.hidden = false;
+      err.textContent = e && e.code === "42501" ? "Your account doesn't have permission to change this portal." : "Couldn't save. Check your connection and try again."; }
+  };
+  dlg.showModal();
+}
+
+// ---------- starters ----------
+async function starter(kind){
+  if(kind === "tasks"){
+    const seq = [["Design & drawings","Design",42],["Structural engineering","Design",21,-14],["Permit review","Permits",42],["Demolition","Site work",7],["Excavation & foundation","Structure",21],["Framing","Structure",28],["Roofing, windows & doors","Envelope",14],["Rough plumbing, electrical & HVAC","Rough-ins",21],["Rough inspections","Inspections",5],["Insulation & drywall","Finishes",21],["Flooring & tile","Finishes",21],["Cabinets & countertops","Finishes",14],["Paint & trim","Finishes",14],["Fixtures & appliances","Finishes",10],["Final inspection & punch list","Closeout",10]];
+    let cur = project.start || todayISO();
+    const rows = seq.map(([name, phase, len, overlap]) => {
+      const start = overlap ? addDays(cur, overlap) : cur;
+      const end = addDays(start, len - 1); cur = addDays(end, 1);
+      return {name, phase, start, end, progress: 0, owner: "", notes: ""};
+    });
+    if(!confirm(`Add ${rows.length} typical tasks starting ${fmtDate(rows[0].start)}? You can edit or delete any of them.`)) return;
+    await insertMany("tasks", rows.map(x => ({...x, created: Date.now(), updated: Date.now()})));
+    toast("Schedule added. Tap any bar to adjust it.");
+  } else {
+    if(!confirm(`Add ${TRADES.length} standard budget categories with blank amounts?`)) return;
+    await insertMany("budget", TRADES.map(c => ({category: c, item: "", budgeted: "", committed: "", paid: "", vendor: "", notes: "", created: Date.now(), updated: Date.now()})));
+    toast("Categories added. Tap a row to fill in amounts.");
+  }
+}
+
+// ---------- events ----------
+document.addEventListener("click", e => {
+  if(e.target.closest("[data-stop]")) return;
+  const v = e.target.closest("[data-view]");
+  if(v){ view = v.dataset.view; render(); window.scrollTo(0, 0); return; }
+  const a = e.target.closest("[data-add]");
+  if(a){
+    const col = a.dataset.add, preset = {};
+    if(col === "tasks"){ preset.start = todayISO(); preset.end = addDays(todayISO(), 6); preset.progress = 0; }
+    if(col === "conversations" || col === "quotes" || col === "plans" || col === "changeOrders") preset.date = todayISO();
+    if(col === "changeOrders"){ preset.number = "CO-" + String(data.changeOrders.length + 1).padStart(3, "0"); preset.status = "Pending"; }
+    if(col === "quotes") preset.status = "Received";
+    if(col === "materials") preset.status = "Specified";
+    openForm(col, null, preset); return;
+  }
+  const r = e.target.closest("[data-addrev]");
+  if(r){ openForm("plans", null, {sheet: r.dataset.addrev, discipline: r.dataset.disc, date: todayISO(), status: "For review"}); return; }
+  const ed = e.target.closest("[data-edit]");
+  if(ed){ const rec = data[ed.dataset.edit].find(x => x.id === ed.dataset.id); if(rec) openForm(ed.dataset.edit, rec); return; }
+  if(e.target.closest("[data-project]")){ openForm("project", Object.keys(project).length ? project : null); return; }
+  const st = e.target.closest("[data-starter]");
+  if(st){ starter(st.dataset.starter).catch(() => toast("Couldn't add everything. Try again.")); return; }
+  const f = e.target.closest("[data-filter]");
+  if(f){ filters[f.dataset.filter] = f.dataset.val; render(); }
+});
+document.addEventListener("submit", async e => {
+  if(e.target.id !== "authForm") return;
+  e.preventDefault();
+  const email = $("#authEmail").value.trim(); if(!email) return;
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  const {error} = await sb.auth.signInWithOtp({email, options: {emailRedirectTo: location.origin + location.pathname}});
+  btn.disabled = false;
+  authMsg = error ? "Couldn't send the link: " + error.message : `Check ${email} for a sign-in link. Open it on this device.`;
+  $("#authMsg").textContent = authMsg;
+});
+$("#signOut").onclick = () => sb.auth.signOut();
+document.addEventListener("keydown", e => {
+  if((e.key === "Enter" || e.key === " ") && e.target.matches('.card[role="button"]')){ e.preventDefault(); e.target.click(); }
+});
+// Scroll the Gantt to today on first view
+new MutationObserver(() => {
+  const g = $("#gscroll"), t = g && g.querySelector(".g-today");
+  if(g && t && !g.dataset.done){ g.dataset.done = 1; g.scrollLeft = Math.max(0, t.offsetLeft - 80); }
+}).observe($("#main"), {childList: true});
+
+init();
+})();
+</script>
+</body>
+</html>
