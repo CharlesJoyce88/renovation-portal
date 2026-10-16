@@ -279,7 +279,6 @@ const MAX_MB = 50;
 // ---------- state ----------
 const data = Object.fromEntries(COLS.map(c => [c, []]));
 let project = {}, projectId = null;
-let pendingEmail = "";
 let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
 const filters = {plans:"All", conversations:"All", materials:"All"};
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
@@ -376,10 +375,13 @@ async function init(){
 function authScreen(){
   if(!configured) return `<div class="auth"><h1>Almost there</h1><p>Open <b>index.html</b> and paste your Supabase project URL and key into the two lines near the top marked "Supabase settings."</p></div>`;
   if(connecting) return `<div class="auth"><p class="meta">Loading…</p></div>`;
-  if(!session) return `<div class="auth"><h1>Sign in</h1><p class="meta">Enter your email and we'll send you a sign-in link. Only people on this portal's member list can see the project.</p>
-    <form id="authForm"><input type="email" id="authEmail" required placeholder="you@example.com" autocomplete="email" aria-label="Email"><button class="btn primary" type="submit">Email me a sign-in link</button></form>
-    <p class="meta" id="authMsg">${esc(authMsg)}</p>
-    <form id="codeForm" ${pendingEmail ? "" : "hidden"}><label class="meta" for="authCode">Or enter the code from the email</label><input id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button class="btn" type="submit">Sign in with code</button></form></div>`;
+  if(!session) return `<div class="auth"><h1>Sign in</h1><p class="meta">Only people on this portal's member list can see the project.</p>
+    <form id="authForm">
+      <input type="email" id="authEmail" required placeholder="Email" autocomplete="username" aria-label="Email">
+      <input type="password" id="authPass" required placeholder="Password" autocomplete="current-password" aria-label="Password">
+      <button class="btn primary" type="submit">Sign in</button>
+    </form>
+    <p class="meta" id="authMsg">${esc(authMsg)}</p></div>`;
   if(member === false) return `<div class="auth"><h1>No access yet</h1><p>${esc(session.user.email)} isn't on this portal's member list. Ask the owner to add your email, then reload this page.</p></div>`;
   return "";
 }
@@ -799,25 +801,19 @@ document.addEventListener("click", e => {
   if(f){ filters[f.dataset.filter] = f.dataset.val; render(); }
 });
 document.addEventListener("submit", async e => {
-  if(e.target.id === "codeForm"){
-    e.preventDefault();
-    const token = $("#authCode").value.replace(/\s/g, ""); if(!token) return;
-    const btn = e.target.querySelector("button"); btn.disabled = true;
-    const {error} = await sb.auth.verifyOtp({email: pendingEmail, token, type: "email"});
-    btn.disabled = false;
-    if(error){ authMsg = "That code didn't work. Check you're using the code from the newest email, or request a new one."; $("#authMsg").textContent = authMsg; }
-    return;
-  }
   if(e.target.id !== "authForm") return;
   e.preventDefault();
-  const email = $("#authEmail").value.trim(); if(!email) return;
-  pendingEmail = email;
-  const btn = e.target.querySelector("button"); btn.disabled = true;
-  const {error} = await sb.auth.signInWithOtp({email, options: {emailRedirectTo: location.origin + location.pathname}});
-  btn.disabled = false;
-  authMsg = error ? "Couldn't send the email: " + error.message : `Check ${email} for the newest email from Supabase. Click its link, or type its code below.`;
-  $("#authMsg").textContent = authMsg;
-  if(!error) $("#codeForm").hidden = false;
+  const email = $("#authEmail").value.trim(), password = $("#authPass").value;
+  if(!email || !password) return;
+  const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Signing in…";
+  const {error} = await sb.auth.signInWithPassword({email, password});
+  btn.disabled = false; btn.textContent = "Sign in";
+  if(error){
+    authMsg = /invalid/i.test(error.message) ? "That email and password don't match. Check both and try again." :
+      /confirm/i.test(error.message) ? "This account isn't confirmed yet. In Supabase, recreate the user with Auto Confirm turned on." :
+      "Couldn't sign in: " + error.message;
+    $("#authMsg").textContent = authMsg;
+  }
 });
 $("#signOut").onclick = () => sb.auth.signOut();
 document.addEventListener("keydown", e => {
