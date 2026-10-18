@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Renovation portal</title>
+<title>98 Woodlawn Renovation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#EDEFED;--surface:#FFFFFF;--ink:#1E2428;--muted:#5D676D;--line:#D2D7D6;--chip:#E2E6E5;
-  --accent:#F2B705;--accent-ink:#1E2428;--blue:#2D5BD8;--good:#2F7D4F;--bad:#B5412F;
+  --paper:#F2ECDF;--surface:#FBF8F1;--ink:#2A2620;--muted:#6B6253;--line:#D8CDB8;--chip:#E9E0CE;
+  --accent:#A8844F;--accent-ink:#2A2620;--blue:#365C49;--good:#4D7650;--bad:#963A2D;
+  --green:#2E4A3B;--on-green:#F6F0E2;--header:#25392E;--header-ink:#EFE7D4;--header-muted:#B8C2B2;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -18,19 +19,21 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --paper:#14181B;--surface:#1D2226;--ink:#E7EAEB;--muted:#9AA3A8;--line:#2E363B;--chip:#272E33;
-    --blue:#86A6FF;--good:#6CC08D;--bad:#F08A76;color-scheme:dark;
+    --paper:#161A17;--surface:#1E231F;--ink:#ECE5D5;--muted:#A69D8B;--line:#363D36;--chip:#2A302B;
+    --accent:#C5A26B;--blue:#9EC3AD;--good:#8FBC8F;--bad:#E3907F;
+    --green:#3F634F;--on-green:#F6F0E2;--header:#111512;--header-ink:#ECE5D5;--header-muted:#9DA897;color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#14181B;--surface:#1D2226;--ink:#E7EAEB;--muted:#9AA3A8;--line:#2E363B;--chip:#272E33;
-  --blue:#86A6FF;--good:#6CC08D;--bad:#F08A76;color-scheme:dark;
+  --paper:#161A17;--surface:#1E231F;--ink:#ECE5D5;--muted:#A69D8B;--line:#363D36;--chip:#2A302B;
+  --accent:#C5A26B;--blue:#9EC3AD;--good:#8FBC8F;--bad:#E3907F;
+  --green:#3F634F;--on-green:#F6F0E2;--header:#111512;--header-ink:#ECE5D5;--header-muted:#9DA897;color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
-h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;margin:0;line-height:1.1}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.55 "Libre Caslon Text",Georgia,"Times New Roman",serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--header)}
+h1,h2,h3{font-family:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;font-weight:400;margin:0;line-height:1.15}
 a{color:var(--blue)}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -38,7 +41,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
 .top-inner{max-width:1180px;margin:0 auto;padding:10px 16px 0}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
-.brand b{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand b{font-family:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;font-weight:400;font-size:22px;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand span{color:var(--muted);font-size:14px;white-space:nowrap}
 nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:6px -16px 0;padding:0 12px}
 nav.tabs::-webkit-scrollbar{display:none}
@@ -64,7 +67,7 @@ main{max-width:1180px;margin:0 auto;padding:20px 16px 80px}
 .card:hover{border-color:var(--muted)}
 .card h3{font-size:21px;font-weight:600}
 .meta{color:var(--muted);font-size:14px}
-.amount{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:24px;font-variant-numeric:tabular-nums}
+.amount{font-family:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;font-weight:400;font-size:24px;font-variant-numeric:tabular-nums}
 .badge{display:inline-block;font-size:13px;padding:1px 8px;border-radius:20px;background:var(--chip);color:var(--ink);white-space:nowrap}
 .badge.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .badge.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
@@ -91,7 +94,7 @@ main{max-width:1180px;margin:0 auto;padding:20px 16px 80px}
 .budgetbar i{display:block;height:100%}
 .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:15px}
 .legend div{display:flex;flex-direction:column}
-.legend b{font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.legend b{font-family:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;font-size:26px;font-weight:400;font-variant-numeric:tabular-nums;line-height:1.1}
 .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
 .ov{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .ov h3{font-size:22px;margin-bottom:8px}
@@ -147,6 +150,95 @@ dialog::backdrop{background:rgba(10,14,16,.55)}
 .uploading{font-size:14px;color:var(--muted)}
 .err{color:var(--bad);font-size:14px}
 .auth{max-width:440px;margin:8vh auto 0}.auth h1{font-size:44px;margin-bottom:8px}.auth form{display:grid;gap:10px;margin-top:18px}.auth input{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:11px 12px;width:100%}
+.tabsep{flex:0 0 1px;width:1px;background:var(--line);margin:10px 6px}
+.gallery{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.tile a.img{display:block;aspect-ratio:4/3;background:var(--chip)}
+.tile a.img img{width:100%;height:100%;object-fit:cover;display:block}
+.tile a.img span{display:flex;height:100%;align-items:center;justify-content:center;font-size:32px}
+.tile button{background:none;border:0;text-align:left;padding:8px 10px;cursor:pointer;font-size:14px;color:var(--ink)}
+.progress{height:10px;background:var(--chip);border-radius:5px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--good)}
+.md{font-size:16px;line-height:1.6}
+.md h2,.md h3,.md h4{font-family:"Libre Caslon Display","Libre Caslon Text",Georgia,"Times New Roman",serif;margin:18px 0 6px}
+.md h2{font-size:26px}.md h3{font-size:22px}.md h4{font-size:19px}
+.md p{margin:0 0 10px}.md ul,.md ol{margin:0 0 10px;padding-left:22px}
+.md code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:.92em}
+.md pre{background:var(--chip);padding:10px;border-radius:6px;overflow-x:auto}
+.md table{min-width:0}
+.list1{display:grid;gap:10px;max-width:860px}
+.cmp table{table-layout:fixed}
+.cmp th,.cmp td{vertical-align:top;font-size:15px;border-right:1px solid var(--line)}
+.cmp tbody tr{cursor:default}
+.cmp tbody tr:hover{background:none}
+.cmp .cmp-label{position:sticky;left:0;z-index:1;width:170px;background:var(--chip);color:var(--muted);text-align:left}
+.cmp thead th,.cmp tr:first-child th{background:var(--surface)}
+.cmp tr:first-child th.cmp-label{background:var(--chip)}
+.cmp td.best{background:color-mix(in srgb,var(--good) 12%,transparent)}
+.cmp .declined{opacity:.5}
+@media print{
+  header.top,.noprint,.toast{display:none!important}
+  body{background:#fff;color:#000}
+  main{padding:0;max-width:none}
+  .tablewrap{overflow:visible;border:0}
+  .cmp table{min-width:0!important;width:100%}
+  .cmp .cmp-label{position:static}
+}
+
+/* ---- Edwardian styling: painted-woodwork header, brass details, double rules, panelled cards ---- */
+header.top{background:var(--header);border-bottom:3px double var(--accent)}
+.brand b{color:var(--header-ink)}
+.brand span{color:var(--header-muted);font-style:italic}
+#signOut{color:var(--header-ink);white-space:nowrap}
+@media (max-width:560px){.brand span{display:none}}
+nav.tabs button{color:var(--header-muted);font-variant:small-caps;letter-spacing:.06em;font-size:16px;padding:9px 9px 10px}
+nav.tabs button[aria-current="page"]{color:var(--header-ink);border-bottom-color:var(--accent)}
+nav.tabs .count{color:var(--accent)}
+.tabsep{background:rgba(239,231,212,.18)}
+.viewhead{border-bottom:3px double var(--line);padding-bottom:14px;margin-bottom:18px}
+.viewhead h2{font-size:38px;font-weight:400;letter-spacing:.005em}
+.viewhead p{font-style:italic}
+.btn{border-radius:3px;border-color:var(--line)}
+.btn.primary{background:var(--green);border-color:var(--green);color:var(--on-green);font-weight:400;letter-spacing:.02em}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{color:var(--blue)}
+.panel{border-radius:3px;box-shadow:inset 0 0 0 4px var(--surface),inset 0 0 0 5px var(--line)}
+.card{border-radius:3px}
+.card h3{font-weight:400}
+.card:hover{border-color:var(--accent)}
+.badge{border-radius:2px;font-variant:small-caps;letter-spacing:.04em;font-size:14px;padding:0 7px}
+.chips button{border-radius:2px;font-variant:small-caps;letter-spacing:.04em}
+.chips button[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.f label,th,.legend span{font-variant:small-caps;letter-spacing:.05em}
+th{background:var(--chip)}
+.banner{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-radius:2px}
+.group > h3{font-size:24px}
+.ov h3{font-size:23px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px}
+.hero h1{font-weight:400;letter-spacing:-.005em;line-height:1.05}
+.hero .addr{font-style:italic}
+.ornament{display:flex;align-items:center;gap:14px;color:var(--accent);margin:14px 0 4px;max-width:520px}
+.ornament::before,.ornament::after{content:"";flex:1;height:0;border-top:3px double currentColor;opacity:.7}
+.ornament svg{flex:0 0 auto}
+.budgetbar{border-radius:2px}
+.empty{border:3px double var(--line);border-radius:3px;background:var(--surface)}
+.empty h3{font-size:28px}
+.m-head h2{font-size:28px}
+dialog{border-radius:4px;border:1px solid var(--line)}
+.g-today{background:var(--accent)}
+.g-today span{background:var(--accent);color:var(--surface)}
+body .months b{background:var(--green)}
+.progress i{background:var(--green)}
+.auth h1{font-size:46px}
+body .toast{background:var(--green);color:var(--on-green);border-radius:3px}
+:focus-visible{outline-color:var(--accent)}
+tr.needs td:first-child{box-shadow:inset 4px 0 0 var(--accent)}
+.catbar{display:grid;grid-template-columns:minmax(110px,170px) 1fr auto;gap:10px;align-items:center;padding:6px 0;font-size:15px}
+.catbar .track{height:14px;background:var(--chip);border-radius:3px;overflow:hidden;display:flex}
+.catbar .track i{display:block;height:100%}
+.months{display:flex;align-items:flex-end;gap:6px;height:150px;overflow-x:auto;padding-top:18px}
+.months div{flex:1 0 38px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:12px;color:var(--muted);gap:4px}
+.months b{display:block;width:100%;max-width:44px;background:var(--ink);border-radius:3px 3px 0 0;min-height:2px}
+.months span.v{font-variant-numeric:tabular-nums;color:var(--ink);font-size:11px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;z-index:50;font-size:15px;max-width:90vw}
 @media (prefers-reduced-motion:no-preference){dialog[open]{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:0}}}
 </style>
@@ -154,7 +246,7 @@ dialog::backdrop{background:rgba(10,14,16,.55)}
 <body>
 <header class="top">
   <div class="top-inner">
-    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brand"><b id="brandName">Renovation portal</b><span id="brandSub"></span></div><button class="btn ghost" id="signOut" hidden>Sign out</button></div>
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brand"><b id="brandName">98 Woodlawn Renovation</b><span id="brandSub"></span></div><button class="btn ghost" id="signOut" hidden>Sign out</button></div>
     <nav class="tabs" id="tabs" aria-label="Sections"></nav>
   </div>
 </header>
@@ -183,19 +275,30 @@ function toast(msg){ const t = document.createElement("div"); t.className = "toa
 // ---------- schema ----------
 const TRADES = ["Design & architecture","Engineering","Permits & fees","Demolition","Excavation & foundation","Framing","Roofing","Windows & doors","Siding & exterior","Plumbing","Electrical","HVAC","Insulation","Drywall","Flooring","Tile","Cabinetry","Countertops","Paint","Trim & finish carpentry","Fixtures & appliances","Landscaping","Cleanup & disposal","Contingency"];
 const PHASES = ["Design","Permits","Site work","Structure","Envelope","Rough-ins","Inspections","Finishes","Closeout"];
-const PHASE_COLORS = ["#5B7DB1","#A3864B","#7A9A5B","#B5624E","#4C9A9A","#8C6BB1","#C08A3E","#6E8F7A","#7B8794"];
+const PHASE_COLORS = ["#7E9474","#963A2D","#B98A3E","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
 const phaseColor = p => PHASE_COLORS[Math.max(0, PHASES.indexOf(p)) % PHASE_COLORS.length];
 
+const LABELS = ["General contractor","Designer","Architect","Engineer","Subcontractor","Supplier","Inspector","Lender","Other"];
+const PAY_METHODS = ["Credit card","Debit card","E-transfer","Cheque","Cash","Bank transfer / wire","Line of credit / financing","Other"];
 const S = {
-  quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade so you can compare them side by side.", fields:[
-    {k:"vendor",l:"Contractor or vendor",t:"text",req:1},
-    {k:"trade",l:"Trade or scope",t:"text",list:"trades",half:1},
-    {k:"amount",l:"Amount",t:"money",half:1},
+  quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade. Open Compare on any trade to see its quotes side by side.", fields:[
+    {k:"vendor",l:"Contractor or vendor",t:"text",req:1,half:1,list:"companies"},
+    {k:"trade",l:"Trade or scope (quotes with the same name are compared)",t:"text",list:"trades",half:1},
+    {k:"amount",l:"Quoted price",t:"money",half:1},
+    {k:"deposit",l:"Deposit required",t:"money",half:1},
     {k:"date",l:"Date received",t:"date",half:1},
     {k:"validUntil",l:"Valid until",t:"date",half:1},
+    {k:"startDate",l:"Earliest start",t:"date",half:1},
+    {k:"duration",l:"How long the work takes",t:"text",half:1,ph:"e.g. 16 weeks"},
     {k:"status",l:"Status",t:"select",o:["Received","Under review","Accepted","Declined"],half:1},
-    {k:"contact",l:"Contact",t:"text",half:1,ph:"Phone or email"},
-    {k:"notes",l:"Inclusions, exclusions, payment terms",t:"textarea"},
+    {k:"rating",l:"Your rating",t:"select",o:["5 – Excellent","4 – Good","3 – OK","2 – Weak","1 – Poor"],half:1},
+    {k:"contact",l:"Contact",t:"text",ph:"Phone or email"},
+    {k:"includes",l:"What's included",t:"textarea",ph:"e.g. permits, demolition, disposal, framing, drywall, cleanup"},
+    {k:"excludes",l:"What's excluded",t:"textarea",ph:"e.g. electrical, appliances, landscaping"},
+    {k:"allowances",l:"Allowances",t:"textarea",ph:"e.g. tile $8/sq ft, plumbing fixtures $4,000"},
+    {k:"paymentSchedule",l:"Payment schedule",t:"textarea",ph:"e.g. 10% deposit, 30% at framing, 30% at drywall, balance at completion"},
+    {k:"warranty",l:"Warranty",t:"text",ph:"e.g. 2 years workmanship"},
+    {k:"notes",l:"Other notes",t:"textarea"},
     {k:"files",l:"Quote documents",t:"files"}]},
   tasks:{title:"Timeline", one:"task", blurb:"Your schedule as a Gantt chart. Tap any bar to update dates or progress.", fields:[
     {k:"name",l:"Task",t:"text",req:1},
@@ -209,12 +312,124 @@ const S = {
     {k:"date",l:"Date",t:"date",req:1,half:1},
     {k:"method",l:"How",t:"select",o:["Meeting","Site visit","Phone call","Email","Text message","Video call"],half:1},
     {k:"person",l:"Who",t:"text",req:1,half:1,list:"people"},
-    {k:"role",l:"Role",t:"select",o:["Designer","Architect","General contractor","Engineer","Subcontractor","Supplier","Inspector","Lender","Other"],half:1},
+    {k:"role",l:"Role",t:"select",o:LABELS,half:1},
     {k:"subject",l:"Subject",t:"text"},
     {k:"notes",l:"What was discussed and decided",t:"textarea"},
     {k:"followUp",l:"Follow-up needed",t:"text"},
     {k:"followUpDate",l:"Follow up by",t:"date",half:1},
     {k:"files",l:"Attachments (emails, sketches, photos)",t:"files"}]},
+  invoices:{title:"Expenses", one:"invoice", blurb:"Every invoice you receive, totalled by category and month. Upload PDFs and the details are read for you to check.", fields:[
+    {k:"vendor",l:"Vendor",t:"text",req:1,half:1,list:"companies"},
+    {k:"category",l:"Category",t:"select",o:["Architect","Designer","Engineer","General contractor","Subcontractor","Materials & supplies","Permits & inspections","Financing","Other"],half:1},
+    {k:"invoiceNumber",l:"Invoice number",t:"text",half:1},
+    {k:"budgetLineId",l:"Budget line",t:"ref",half:1,src:() => data.budget.slice().sort((a, b) => (a.category || "").localeCompare(b.category || "")).map(b => [b.id, b.category + (b.item ? " — " + b.item : "")]), def: r => { const b = r.budgetLine && data.budget.find(b => lc(b.category) === lc(r.budgetLine)); return b ? b.id : ""; }},
+    {k:"date",l:"Invoice date",t:"date",half:1},
+    {k:"dueDate",l:"Due date",t:"date",half:1},
+    {k:"subtotal",l:"Subtotal",t:"money",half:1},
+    {k:"tax",l:"Tax (HST)",t:"money",half:1},
+    {k:"total",l:"Total",t:"money",req:1,half:1},
+    {k:"holdback",l:"Holdback kept back (contractors: usually 10%)",t:"money",half:1},
+    {k:"status",l:"Paid?",t:"select",o:["Unpaid","Partially paid","Holdback held","Paid"],half:1},
+    {k:"paymentMethod",l:"How it was paid",t:"select",o:PAY_METHODS,half:1},
+    {k:"paidDate",l:"Date paid",t:"date",half:1},
+    {k:"paidAmount",l:"Amount paid (if partial)",t:"money",half:1},
+    {k:"paymentRef",l:"Cheque # or confirmation #",t:"text"},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Invoice file",t:"files"}]},
+  permits:{title:"Permits", one:"permit or inspection", blurb:"Your building permit and every inspection, with booking dates, results and the inspector's notes.", fields:[
+    {k:"name",l:"Permit or inspection",t:"text",req:1},
+    {k:"type",l:"Type",t:"select",o:["Building permit","Inspection","Other approval"],half:1},
+    {k:"status",l:"Status",t:"select",o:["Not started","Applied","Issued","Booked","Passed","Failed – re-inspection needed","Not required"],half:1},
+    {k:"permitNumber",l:"Permit or file number",t:"text",half:1},
+    {k:"inspector",l:"Inspector or plans examiner",t:"text",half:1},
+    {k:"date",l:"Applied or booked for",t:"date",half:1},
+    {k:"resultDate",l:"Result date",t:"date",half:1},
+    {k:"notes",l:"Notes and deficiencies",t:"textarea"},
+    {k:"files",l:"Permit, stamped drawings, inspection reports, photos",t:"files"}]},
+  photos:{title:"Photos", one:"photo", blurb:"A dated record of the work, room by room. Tag shots of what's inside the walls before drywall goes up.", fields:[
+    {k:"date",l:"Date taken",t:"date",req:1,half:1},
+    {k:"room",l:"Room or area",t:"text",half:1,list:"rooms"},
+    {k:"phase",l:"Phase",t:"select",o:PHASES,half:1},
+    {k:"insideWalls",l:"Shows what's inside the walls?",t:"select",o:["Yes","No"],half:1},
+    {k:"caption",l:"Caption",t:"text"},
+    {k:"files",l:"Photo",t:"files"}]},
+  selections:{title:"Selections", one:"selection", blurb:"Everything you still need to choose, with a decide-by date so late decisions don't hold up the work.", fields:[
+    {k:"item",l:"What needs choosing",t:"text",req:1,ph:"e.g. Kitchen backsplash tile"},
+    {k:"room",l:"Room or area",t:"text",half:1,list:"rooms"},
+    {k:"category",l:"Category",t:"select",o:["Lumber & framing","Roofing","Windows & doors","Insulation","Drywall","Flooring","Tile","Cabinetry","Countertops","Plumbing fixtures","Lighting & electrical","Appliances","Paint","Hardware","Exterior","Other"],half:1},
+    {k:"decideBy",l:"Decide by",t:"date",half:1},
+    {k:"status",l:"Status",t:"select",o:["To decide","Shortlisted","Decided","Ordered"],half:1},
+    {k:"options",l:"Options being considered",t:"textarea"},
+    {k:"choice",l:"Final choice",t:"text"},
+    {k:"cost",l:"Cost",t:"money",half:1},
+    {k:"supplier",l:"Supplier",t:"text",half:1},
+    {k:"link",l:"Product link",t:"url"},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Photos, spec sheets, samples",t:"files"}]},
+  punch:{title:"Punch list", one:"item", blurb:"Things that need fixing, who's responsible and whether they're done. Use it during the build and at the final walkthrough.", fields:[
+    {k:"item",l:"What needs fixing",t:"text",req:1},
+    {k:"room",l:"Room or area",t:"text",half:1,list:"rooms"},
+    {k:"responsible",l:"Who fixes it",t:"text",half:1,list:"companies"},
+    {k:"priority",l:"Priority",t:"select",o:["High","Normal","Low"],half:1},
+    {k:"status",l:"Status",t:"select",o:["Open","In progress","Fixed – to check","Closed"],half:1},
+    {k:"found",l:"Found on",t:"date",half:1},
+    {k:"dueDate",l:"Fix by",t:"date",half:1},
+    {k:"notes",l:"Details",t:"textarea"},
+    {k:"files",l:"Photos",t:"files"}]},
+  documents:{title:"Documents", one:"document", blurb:"Contracts, insurance, WSIB clearance and licences for each company, with a warning before anything expires.", fields:[
+    {k:"company",l:"Company",t:"text",req:1,half:1,list:"companies"},
+    {k:"docType",l:"Document",t:"select",o:["Contract","Liability insurance certificate","WSIB clearance certificate","Licence","Lien waiver or release","Bond","Other"],half:1},
+    {k:"title",l:"Description",t:"text",ph:"e.g. Policy #, contract amount, licence #"},
+    {k:"issued",l:"Issued or signed",t:"date",half:1},
+    {k:"expiry",l:"Expires",t:"date",half:1},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Document",t:"files"}]},
+  warranties:{title:"Warranties", one:"warranty", blurb:"Manuals, warranties, model numbers and paint codes, so you can find them years from now.", fields:[
+    {k:"item",l:"Item",t:"text",req:1},
+    {k:"category",l:"Category",t:"select",o:["Appliance","Plumbing fixture","Lighting & electrical","HVAC","Roofing","Windows & doors","Flooring","Cabinetry & counters","Paint & finishes","Workmanship","Other"],half:1},
+    {k:"room",l:"Room or area",t:"text",half:1,list:"rooms"},
+    {k:"brand",l:"Brand",t:"text",half:1},
+    {k:"model",l:"Model #",t:"text",half:1},
+    {k:"serial",l:"Serial #",t:"text",half:1},
+    {k:"supplier",l:"Bought from or installed by",t:"text",half:1},
+    {k:"purchaseDate",l:"Purchased or installed",t:"date",half:1},
+    {k:"warrantyYears",l:"Warranty length (years)",t:"number",half:1},
+    {k:"warrantyEnd",l:"Warranty ends (if known)",t:"date",half:1},
+    {k:"registered",l:"Registered with manufacturer?",t:"select",o:["Yes","No"],half:1},
+    {k:"notes",l:"Notes (paint codes, filter sizes, care instructions)",t:"textarea"},
+    {k:"files",l:"Manual, receipt, warranty card",t:"files"}]},
+  research:{title:"Research", one:"research note", blurb:"Conversations with Claude and other research, saved with your takeaways and what you decided.", fields:[
+    {k:"title",l:"Title",t:"text",req:1,ph:"e.g. Home automation comparison"},
+    {k:"topic",l:"Topic",t:"select",o:["Home automation","Heating & cooling","Windows & doors","Insulation & energy","Kitchen & bath","Finishes & materials","Appliances","Structure & engineering","Permits & regulations","Costs & financing","Other"],half:1},
+    {k:"date",l:"Date",t:"date",half:1},
+    {k:"link",l:"Link to the Claude conversation (optional)",t:"url",ph:"https://claude.ai/share/…"},
+    {k:"summary",l:"Key takeaways",t:"textarea"},
+    {k:"decision",l:"What you decided",t:"text"},
+    {k:"conversation",l:"Conversation or notes (paste here; Markdown formatting is kept)",t:"textarea",big:1},
+    {k:"files",l:"Attachments",t:"files"}]},
+  holdbacks:{title:"Holdbacks", one:"finish date", blurb:"", fields:[
+    {k:"vendor",l:"Contractor",t:"text",req:1},
+    {k:"completionDate",l:"Date their work was finished",t:"date",req:1,half:1},
+    {k:"notes",l:"Notes (e.g. certificate of substantial performance published)",t:"textarea"}]},
+  contacts:{title:"Contacts", one:"contact", blurb:"Everyone on your project, grouped by company. Paste a signature or business card to add someone.", fields:[
+    {k:"name",l:"Name",t:"text",req:1,half:1},
+    {k:"label",l:"Label",t:"select",o:LABELS,half:1},
+    {k:"title",l:"Job title",t:"text",half:1},
+    {k:"company",l:"Company",t:"text",half:1,list:"companies"},
+    {k:"phone",l:"Phone",t:"text",half:1},
+    {k:"mobile",l:"Mobile",t:"text",half:1},
+    {k:"email",l:"Email",t:"text"},
+    {k:"website",l:"Website",t:"text",half:1},
+    {k:"address",l:"Address",t:"text",half:1},
+    {k:"notes",l:"Notes",t:"textarea"}]},
+  companies:{title:"Companies", one:"company", blurb:"", fields:[
+    {k:"name",l:"Company name",t:"text",req:1},
+    {k:"label",l:"Type",t:"select",o:LABELS,half:1},
+    {k:"phone",l:"Main phone",t:"text",half:1},
+    {k:"email",l:"Email",t:"text",half:1},
+    {k:"website",l:"Website",t:"text",half:1},
+    {k:"address",l:"Address",t:"text"},
+    {k:"notes",l:"Notes",t:"textarea"}]},
   plans:{title:"Plans", one:"plan revision", blurb:"Drawings grouped by sheet, newest revision on top and the full history underneath.", fields:[
     {k:"sheet",l:"Drawing or sheet",t:"text",req:1,list:"sheets",ph:"e.g. A-101 Main floor plan"},
     {k:"revision",l:"Revision",t:"text",half:1,ph:"e.g. Rev B"},
@@ -244,7 +459,7 @@ const S = {
     {k:"item",l:"Description",t:"text"},
     {k:"budgeted",l:"Budgeted",t:"money",half:1},
     {k:"committed",l:"Committed (contracted)",t:"money",half:1},
-    {k:"paid",l:"Paid to date",t:"money",half:1},
+    {k:"paid",l:"Paid to date (used only if no invoices are assigned)",t:"money",half:1},
     {k:"vendor",l:"Vendor",t:"text",half:1},
     {k:"notes",l:"Notes",t:"textarea"}]},
   changeOrders:{title:"Change orders", one:"change order", blurb:"Changes to scope, cost and schedule after contracts are signed.", fields:[
@@ -260,7 +475,6 @@ const S = {
     {k:"files",l:"Signed change order, backup",t:"files"}]}
 };
 const PROJECT = {title:"Project", one:"project details", fields:[
-  {k:"name",l:"Project name",t:"text",req:1,ph:"e.g. Maple St. kitchen + rear addition"},
   {k:"address",l:"Address",t:"text"},
   {k:"budget",l:"Total budget",t:"money",half:1},
   {k:"contingency",l:"Contingency (%)",t:"number",half:1},
@@ -268,19 +482,23 @@ const PROJECT = {title:"Project", one:"project details", fields:[
   {k:"end",l:"Target completion",t:"date",half:1},
   {k:"notes",l:"Scope summary",t:"textarea"}]};
 const COLS = Object.keys(S);
-const VIEWS = ["overview","tasks","quotes","budget","changeOrders","materials","plans","conversations"];
+const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["contacts","conversations","documents"],["research","warranties"]];
+const VIEWS = NAV.flat();
 
 // ---------- Supabase settings: paste your project's values here ----------
-const SUPABASE_URL = "https://sqvzsslzbtzdqdclunbt.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ljxckw7bHq_vnmLZWZNJDg_ukzpSh7m";
+const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
+const SUPABASE_KEY = "YOUR-ANON-OR-PUBLISHABLE-KEY";
 const BUCKET = "portal-files";
 const MAX_MB = 50;
+const PORTAL_NAME = "98 Woodlawn Renovation";
+const ORNAMENT = `<div class="ornament" aria-hidden="true"><svg width="54" height="18" viewBox="0 0 54 18" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M27 2c3 3 3 11 0 14c-3-3-3-11 0-14z"/><path d="M24 9c-5-5-12-5-16 0c4 5 11 5 16 0z"/><path d="M30 9c5-5 12-5 16 0c-4 5-11 5-16 0z"/><circle cx="3" cy="9" r="1.6" fill="currentColor"/><circle cx="51" cy="9" r="1.6" fill="currentColor"/></svg></div>`;
 
 // ---------- state ----------
 const data = Object.fromEntries(COLS.map(c => [c, []]));
 let project = {}, projectId = null;
 let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
-const filters = {plans:"All", conversations:"All", materials:"All"};
+let compareTrade = null;
+const filters = {photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
 
 // ---------- persistence ----------
@@ -303,6 +521,11 @@ async function save(col, id, body){
   } else if(id) await run(sb.from("records").update({data: body, ...stamp}).eq("id", id));
   else await run(sb.from("records").insert({collection: col, data: body}));
   await loadAll();
+}
+async function insertOne(col, body){
+  const {data: row, error} = await sb.from("records").insert({collection: col, data: body}).select("id").single();
+  if(error) throw error;
+  return row.id;
 }
 async function insertMany(col, bodies){
   await run(sb.from("records").insert(bodies.map(b => ({collection: col, data: b}))));
@@ -343,8 +566,9 @@ async function startSession(){
   const {data: ok, error} = await sb.rpc("is_member");
   member = !error && ok === true; canWrite = member;
   if(!member){ connecting = false; render(); return; }
-  await loadAll();
   connecting = false;
+  await loadAll();
+  render();
   let t = null;
   sb.channel("records-changes")
     .on("postgres_changes", {event: "*", schema: "public", table: "records"}, () => { clearTimeout(t); t = setTimeout(loadAll, 400); })
@@ -375,7 +599,7 @@ async function init(){
 function authScreen(){
   if(!configured) return `<div class="auth"><h1>Almost there</h1><p>Open <b>index.html</b> and paste your Supabase project URL and key into the two lines near the top marked "Supabase settings."</p></div>`;
   if(connecting) return `<div class="auth"><p class="meta">Loading…</p></div>`;
-  if(!session) return `<div class="auth"><h1>Sign in</h1><p class="meta">Only people on this portal's member list can see the project.</p>
+  if(!session) return `<div class="auth"><h1>${PORTAL_NAME}</h1>${ORNAMENT}<p class="meta">Only people on this portal's member list can see the project.</p>
     <form id="authForm">
       <input type="email" id="authEmail" required placeholder="Email" autocomplete="username" aria-label="Email">
       <input type="password" id="authPass" required placeholder="Password" autocomplete="current-password" aria-label="Password">
@@ -388,22 +612,23 @@ function authScreen(){
 
 // ---------- rendering ----------
 function render(){
-  $("#brandName").textContent = project.name || "Renovation portal";
+  $("#brandName").textContent = PORTAL_NAME;
   $("#brandSub").textContent = project.address || "";
-  document.title = project.name ? project.name + " · portal" : "Renovation portal";
+  document.title = PORTAL_NAME;
   const counts = {quotes:data.quotes.length, changeOrders:data.changeOrders.filter(c => c.status === "Pending").length};
-  $("#tabs").innerHTML = VIEWS.map(v => {
+  counts.punch = data.punch.filter(x => x.status !== "Closed").length;
+  $("#tabs").innerHTML = NAV.map(g => g.map(v => {
     const label = v === "overview" ? "Overview" : S[v].title;
-    const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : "";
+    const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : v === "punch" && counts.punch ? `<span class="count">${counts.punch} open</span>` : "";
     return `<button data-view="${v}" ${v === view ? 'aria-current="page"' : ""}>${label}${c}</button>`;
-  }).join("");
+  }).join("")).join('<span class="tabsep" aria-hidden="true"></span>');
   const m = $("#main");
   $("#signOut").hidden = !session;
   const gate = authScreen();
   $("#tabs").hidden = !!gate;
   if(gate){ m.innerHTML = gate; return; }
   let banner = "";
-  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, conversations:vConversations}[view];
+  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, contacts:vContacts, conversations:vConversations}[view];
   m.innerHTML = banner + fn();
 }
 
@@ -426,7 +651,7 @@ function firstImage(files){
 }
 function fileIcon(t){ t = t || ""; return t.includes("pdf") ? "📄" : (t.includes("sheet") || t.includes("excel") || t.includes("csv")) ? "📊" : (t.includes("word") || t.includes("document")) ? "📝" : t.startsWith("image/") ? "🖼️" : t.startsWith("video/") ? "🎞️" : "📎"; }
 function badge(text, kind){ return text ? `<span class="badge ${kind || ""}">${esc(text)}</span>` : ""; }
-const statusKind = s => ({Accepted:"good",Approved:"good",Installed:"good",Delivered:"good","Issued for construction":"good",Declined:"bad",Rejected:"bad",Superseded:"bad",Pending:"warn","Under review":"warn","For review":"warn",Ordered:"warn"}[s] || "");
+const statusKind = s => ({Passed:"good",Issued:"good",Decided:"good",Closed:"good","Fixed – to check":"warn","In progress":"warn",Applied:"warn",Booked:"warn",Shortlisted:"warn","Failed – re-inspection needed":"bad",Open:"bad",Accepted:"good",Approved:"good",Installed:"good",Delivered:"good","Issued for construction":"good",Declined:"bad",Rejected:"bad",Superseded:"bad",Pending:"warn","Under review":"warn","For review":"warn",Ordered:"warn"}[s] || "");
 
 // ---- Overview ----
 function money3(){
@@ -434,7 +659,7 @@ function money3(){
   const budget = num(project.budget) || lineBudget;
   const coApproved = sum(data.changeOrders.filter(c => c.status === "Approved"), c => c.costImpact);
   const committed = sum(data.budget, b => b.committed) + coApproved;
-  const paid = sum(data.budget, b => b.paid);
+  const paid = data.invoices.length ? sum(data.invoices, invPaid) : sum(data.budget, b => b.paid);
   return {budget, lineBudget, coApproved, committed, paid};
 }
 function vOverview(){
@@ -453,9 +678,9 @@ function vOverview(){
     const wk = Math.ceil((daysBetween(pStart, t) + 1) / 7);
     schedLine = t < pStart ? `Starts ${fmtDate(pStart)}, ${total} weeks planned` : t > pEnd ? `Planned finish was ${fmtDate(pEnd)}` : `Week ${wk} of ${total}, finishing ${fmtDate(pEnd)}`;
   }
-  const hero = project.name
-    ? `<div><h1>${esc(project.name)}</h1><div class="addr">${esc(project.address || "")}${project.address && schedLine ? "<br>" : ""}${esc(schedLine)}</div></div>`
-    : `<div><h1>Your renovation</h1><div class="addr">Start by naming the project and setting a budget.</div></div>`;
+  const hero = project.address || schedLine
+    ? `<div><h1>${PORTAL_NAME}</h1>${ORNAMENT}<div class="addr">${esc(project.address || "")}${project.address && schedLine ? "<br>" : ""}${esc(schedLine)}</div></div>`
+    : `<div><h1>${PORTAL_NAME}</h1>${ORNAMENT}<div class="addr">Start by adding the address, budget and dates in Edit project details.</div></div>`;
 
   const now = tasks.filter(x => x.start <= t && x.end >= t);
   const next = tasks.filter(x => x.start > t).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 4);
@@ -472,12 +697,12 @@ function vOverview(){
     <div class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="font-size:22px">Budget</h3>${canWrite ? `<button class="btn ghost" data-project>Edit project details</button>` : ""}</div>
       <div class="budgetbar" role="img" aria-label="Paid ${money(paid)}, committed ${money(committed)} of ${money(budget)} budget">
-        <i style="width:${pPaid}%;background:var(--ink)"></i><i style="width:${pCom}%;background:var(--accent)"></i>
+        <i style="width:${pPaid}%;background:var(--green)"></i><i style="width:${pCom}%;background:var(--accent)"></i>
       </div>
       <div class="legend">
         <div><span><span class="sw" style="background:var(--line);border:1px solid var(--muted)"></span>Budget</span><b>${money(budget)}</b></div>
         <div><span><span class="sw" style="background:var(--accent)"></span>Committed</span><b>${money(committed)}</b></div>
-        <div><span><span class="sw" style="background:var(--ink)"></span>Paid</span><b>${money(paid)}</b></div>
+        <div><span><span class="sw" style="background:var(--green)"></span>Paid</span><b>${money(paid)}</b></div>
         <div><span>${remaining < 0 ? "Over budget" : "Uncommitted"}</span><b class="${remaining < 0 ? "neg" : ""}">${money(Math.abs(remaining))}</b></div>
       </div>
       ${coApproved ? `<p class="meta" style="margin:8px 0 0">Committed includes ${money(coApproved)} in approved change orders.</p>` : ""}
@@ -487,8 +712,16 @@ function vOverview(){
       ${list("Coming up", next.map(x => li("tasks", x, esc(x.name), "starts " + fmtShort(x.start))), "Add tasks in Timeline to see what's next.")}
       ${list("Decisions waiting", [
           ...pendQ.slice(0, 4).map(q => li("quotes", q, `Quote: ${esc(q.vendor)}${q.trade ? " (" + esc(q.trade) + ")" : ""}`, money(q.amount))),
-          ...pendCO.map(c => li("changeOrders", c, `Change order: ${esc(c.title)}`, money(c.costImpact)))
-        ], "No open quotes or change orders.")}
+          ...pendCO.map(c => li("changeOrders", c, `Change order: ${esc(c.title)}`, money(c.costImpact))),
+          ...data.selections.filter(x => x.status !== "Decided" && x.status !== "Ordered" && x.decideBy && x.decideBy <= addDays(t, 21)).sort((a, b) => a.decideBy.localeCompare(b.decideBy)).slice(0, 4).map(x => li("selections", x, `Choose: ${esc(x.item)}`, x.decideBy < t ? `<span class="neg">overdue</span>` : "by " + fmtShort(x.decideBy)))
+        ], "No open quotes, change orders or selections due.")}
+      ${list("Inspections", [
+          ...data.permits.filter(x => /Failed/.test(x.status || "")).map(x => li("permits", x, esc(x.name), `<span class="neg">re-inspection needed</span>`)),
+          ...data.permits.filter(x => x.status === "Booked" && x.date).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3).map(x => li("permits", x, esc(x.name), "booked " + fmtShort(x.date)))
+        ], "No inspections booked.")}
+      ${list("Punch list", data.punch.filter(x => x.status !== "Closed").sort((a, b) => ({High: 0, Normal: 1, Low: 2}[a.priority] ?? 1) - ({High: 0, Normal: 1, Low: 2}[b.priority] ?? 1)).slice(0, 5).map(x => li("punch", x, esc(x.item), esc(x.status || "Open"))), "Nothing open on the punch list.")}
+      ${list("Documents to update", data.documents.filter(d => d.expiry && d.expiry <= addDays(t, 30)).sort((a, b) => a.expiry.localeCompare(b.expiry)).slice(0, 5).map(d => li("documents", d, `${esc(d.company)}: ${esc(d.docType || "Document")}`, d.expiry < t ? `<span class="neg">expired</span>` : "expires " + fmtShort(d.expiry))), "No documents expiring in the next 30 days.")}
+      ${list("Invoices to pay", data.invoices.filter(x => invOwing(x) > 0).sort((a, b) => (a.dueDate || "9").localeCompare(b.dueDate || "9")).slice(0, 5).map(x => li("invoices", x, `${esc(x.vendor || "Invoice")} <span class="meta">${money(invOwing(x))}</span>`, x.dueDate ? (x.dueDate < t ? `<span class="neg">overdue</span>` : "due " + fmtShort(x.dueDate)) : "")), "No unpaid invoices.")}
       ${list("Follow-ups", follow.map(c => li("conversations", c, `${esc(c.followUp)} <span class="meta">(${esc(c.person)})</span>`, c.followUpDate ? (c.followUpDate < t ? `<span class="neg">overdue</span>` : "by " + fmtShort(c.followUpDate)) : "")), "No follow-ups logged.")}
       ${list("Materials to order", mats.map(m => li("materials", m, esc(m.item), m.needBy ? "need by " + fmtShort(m.needBy) : esc(m.leadTime || ""))), "Everything selected has been ordered.")}
       ${list("Latest conversations", recent.map(c => li("conversations", c, `${esc(c.person)}: ${esc(c.subject || c.method || "")}`, fmtShort(c.date))), "Log calls, meetings and site visits in Conversations.")}
@@ -531,6 +764,7 @@ function vTimeline(){
 
 // ---- Quotes ----
 function vQuotes(){
+  if(compareTrade && data.quotes.some(q => (q.trade || "Other") === compareTrade)) return vCompare(compareTrade);
   if(!data.quotes.length) return head("quotes") + empty("quotes", "No quotes yet", "Add each bid as it comes in and attach the PDF or photo of the quote.");
   const groups = {};
   data.quotes.forEach(q => (groups[q.trade || "Other"] ||= []).push(q));
@@ -540,14 +774,81 @@ function vQuotes(){
       const qs = groups[g].sort((a, b) => num(a.amount) - num(b.amount));
       const priced = qs.filter(q => num(q.amount) > 0 && q.status !== "Declined");
       const low = priced[0], high = priced[priced.length - 1];
-      return `<div class="group"><h3>${esc(g)} <span class="meta">${qs.length} quote${qs.length > 1 ? "s" : ""}${priced.length > 1 ? ` · spread ${money(num(high.amount) - num(low.amount))}` : ""}</span></h3><div class="grid">${qs.map(q => `
+      return `<div class="group"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(g)} <span class="meta" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px">${qs.length} quote${qs.length > 1 ? "s" : ""}${priced.length > 1 ? ` · spread ${money(num(high.amount) - num(low.amount))}` : ""}</span></h3>${qs.length > 1 ? `<button class="btn primary" data-compare="${esc(g)}">Compare ${qs.length} quotes</button>` : ""}</div><div class="grid">${qs.map(q => `
         <div class="card" data-edit="quotes" data-id="${esc(q.id)}" tabindex="0" role="button">
           <div class="row" style="justify-content:space-between"><h3>${esc(q.vendor)}</h3>${badge(q.status || "Received", statusKind(q.status))}</div>
           <div class="amount">${money(q.amount)}</div>
           <div class="meta">${q.date ? "Received " + fmtDate(q.date) : ""}${q.validUntil ? ` · valid until ${fmtDate(q.validUntil)}` : ""}${priced.length > 1 && q === low ? ` · <b class="pos">lowest</b>` : ""}</div>
+          ${q.startDate || q.duration ? `<div class="meta">${esc([q.startDate && "Can start " + fmtDate(q.startDate), q.duration].filter(Boolean).join(" · "))}</div>` : ""}
+          ${q.rating ? `<div class="meta">Your rating: ${esc(q.rating)}</div>` : ""}
           ${q.notes ? `<p class="notes">${esc(q.notes)}</p>` : ""}${filesHTML(q.files)}
         </div>`).join("")}</div></div>`;
     }).join("");
+}
+
+// ---- Quote comparison ----
+function docCell(vendor, type){
+  const t = todayISO();
+  const docs = data.documents.filter(d => lc(d.company) === lc(vendor) && d.docType === type).sort((a, b) => (b.expiry || "9").localeCompare(a.expiry || "9"));
+  const add = canWrite ? ` <button class="btn ghost noprint" style="padding:0 2px" data-adddoc="${esc(vendor)}" data-doctype="${esc(type)}">Add</button>` : "";
+  if(!docs.length) return `<span class="neg">Not on file</span>${add}`;
+  const d = docs[0];
+  if(d.expiry && d.expiry < t) return `<span class="neg">Expired ${fmtDate(d.expiry)}</span>${add}`;
+  return `<span class="pos">✓ On file</span>${d.expiry ? `<div class="meta">until ${fmtDate(d.expiry)}</div>` : ""}`;
+}
+const QUOTE_GAPS = [["amount","price"],["validUntil","valid-until date"],["startDate","start date"],["duration","duration"],["includes","what's included"],["excludes","what's excluded"],["paymentSchedule","payment schedule"],["warranty","warranty"]];
+function vCompare(trade){
+  const t = todayISO();
+  const qs = data.quotes.filter(q => (q.trade || "Other") === trade).sort((a, b) => ((a.status === "Declined") - (b.status === "Declined")) || (num(a.amount) || 9e15) - (num(b.amount) || 9e15));
+  const live = qs.filter(q => q.status !== "Declined" && num(q.amount) > 0);
+  const low = live.length ? Math.min(...live.map(q => num(q.amount))) : 0;
+  const ns = `<span class="meta"><i>Not stated</i></span>`;
+  const txt = v => v ? `<div style="white-space:pre-wrap">${esc(v)}</div>` : ns;
+  const isLow = q => live.length > 1 && q.status !== "Declined" && num(q.amount) === low;
+  const rows = [
+    ["Quoted price", q => num(q.amount) ? `<span class="amount" style="font-size:24px">${money(q.amount)}</span>${isLow(q) ? `<div class="pos">Lowest</div>` : (low && q.status !== "Declined" && num(q.amount) > low ? `<div class="meta">${money(num(q.amount) - low)} more (${Math.round((num(q.amount) - low) / low * 100)}%)</div>` : "")}` : ns, isLow],
+    ["Status", q => badge(q.status || "Received", statusKind(q.status))],
+    ["Deposit", q => (q.deposit !== "" && q.deposit != null) ? money(q.deposit) + (num(q.amount) ? ` <span class="meta">(${Math.round(num(q.deposit) / num(q.amount) * 100)}% of price)</span>` : "") : ns],
+    ["Valid until", q => q.validUntil ? (q.validUntil < t ? `<span class="neg">Expired ${fmtDate(q.validUntil)}</span>` : fmtDate(q.validUntil)) : ns],
+    ["Earliest start", q => q.startDate ? fmtDate(q.startDate) : ns],
+    ["Duration", q => txt(q.duration)],
+    ["Included", q => txt(q.includes)],
+    ["Excluded", q => txt(q.excludes)],
+    ["Allowances", q => txt(q.allowances)],
+    ["Payment schedule", q => txt(q.paymentSchedule)],
+    ["Warranty", q => txt(q.warranty)],
+    ["Liability insurance", q => docCell(q.vendor, "Liability insurance certificate")],
+    ["WSIB clearance", q => docCell(q.vendor, "WSIB clearance certificate")],
+    ["Your rating", q => q.rating ? esc(q.rating) : ns],
+    ["Other notes", q => q.notes ? txt(q.notes) : `<span class="meta">—</span>`],
+    ["Quote documents", q => filesHTML(q.files) || `<span class="meta">None attached</span>`]
+  ];
+  const gaps = qs.filter(q => q.status !== "Declined").map(q => [q, QUOTE_GAPS.filter(([k]) => !q[k] && q[k] !== 0).map(g => g[1])]).filter(([, g]) => g.length);
+  const colW = 240;
+  const head = `<tr><th class="cmp-label"></th>${qs.map(q => `<th class="${q.status === "Declined" ? "declined" : ""}"><div style="font-variant:normal;letter-spacing:0;font-size:19px;color:var(--ink);font-family:'Libre Caslon Display',Georgia,serif">${esc(q.vendor)}</div>${q.contact ? `<div class="meta" style="font-variant:normal;letter-spacing:0">${esc(q.contact)}</div>` : ""}${q.status === "Accepted" ? `<div style="margin-top:4px">${badge("Accepted", "good")}</div>` : ""}</th>`).join("")}</tr>`;
+  const body = rows.map(([label, fn, hi]) => `<tr><th class="cmp-label">${label}</th>${qs.map(q => `<td class="${q.status === "Declined" ? "declined" : ""} ${hi && hi(q) ? "best" : ""}">${fn(q)}</td>`).join("")}</tr>`).join("");
+  const actions = canWrite ? `<tr class="noprint"><th class="cmp-label"></th>${qs.map(q => `<td class="${q.status === "Declined" ? "declined" : ""}"><div class="row"><button class="btn" data-edit="quotes" data-id="${esc(q.id)}">Edit</button>${q.status !== "Accepted" ? `<button class="btn primary" data-accept="${esc(q.id)}">Accept</button>` : ""}</div></td>`).join("")}</tr>` : "";
+  return `<div class="viewhead"><div><button class="btn ghost noprint" data-compare="" style="padding-left:0">← All quotes</button><h2>${esc(trade)}</h2><p>Comparing ${qs.length} quotes${live.length > 1 ? `. Prices range from ${money(low)} to ${money(Math.max(...live.map(q => num(q.amount))))}` : ""}.</p></div>
+    <div class="row noprint"><button class="btn" data-print>Print</button>${canWrite ? `<button class="btn" data-add="quotes" data-trade="${esc(trade)}">Add another quote</button>` : ""}</div></div>
+    ${gaps.length ? `<div class="banner"><b>Questions to ask before deciding.</b> These quotes don't say:<ul style="margin:6px 0 0;padding-left:20px">${gaps.map(([q, g]) => `<li>${esc(q.vendor)}: ${g.join(", ")}</li>`).join("")}</ul></div>` : ""}
+    <p class="meta">Quotes are rarely like-for-like. Check what each one includes and excludes, and adjust for allowances, before comparing prices.</p>
+    <div class="tablewrap cmp"><table style="min-width:${170 + qs.length * colW}px">${head}${body}${actions}</table></div>`;
+}
+async function updRec(rec, changes){
+  const {id, ...rest} = rec;
+  await run(sb.from("records").update({data: {...rest, ...changes, updated: Date.now()}, updated_at: new Date().toISOString()}).eq("id", id));
+}
+async function acceptQuote(id){
+  const q = data.quotes.find(x => x.id === id); if(!q) return;
+  const trade = q.trade || "Other";
+  const others = data.quotes.filter(x => x.id !== id && (x.trade || "Other") === trade && x.status !== "Declined");
+  if(!confirm(`Accept ${q.vendor}'s quote of ${money(q.amount)}?${others.length ? `\n\nThe other ${others.length} ${trade} quote${others.length > 1 ? "s" : ""} will be marked declined. You can change this later.` : ""}`)) return;
+  await updRec(q, {status: "Accepted"});
+  for(const o of others) await updRec(o, {status: "Declined"});
+  const line = data.budget.find(b => lc(b.category) === lc(trade)) || data.budget.find(b => lc(b.vendor) && lc(b.vendor) === lc(q.vendor));
+  if(line && num(q.amount) && confirm(`Also set the committed amount for the "${lineName(line)}" budget line to ${money(q.amount)}?`)) await updRec(line, {committed: num(q.amount), vendor: line.vendor || q.vendor});
+  await loadAll();
+  toast(`${q.vendor} accepted.`);
 }
 
 // ---- Budget ----
@@ -555,23 +856,28 @@ function vBudget(){
   const starter = canWrite ? `<button class="btn" data-starter="budget">Add standard categories</button>` : "";
   if(!data.budget.length) return head("budget") + empty("budget", "No line items yet", "Add line items yourself or start with standard renovation categories and fill in the numbers.", starter);
   const rows = data.budget.slice().sort((a, b) => (a.category || "").localeCompare(b.category || ""));
-  const {budget, lineBudget, coApproved, committed, paid} = money3();
-  const tb = lineBudget, tc = sum(rows, r => r.committed);
+  const {coApproved} = money3();
+  const inv = id => data.invoices.filter(x => { const l = lineFor(x); return l && l.id === id; });
+  const calc = r => { const xs = inv(r.id); return {n: xs.length, invoiced: sum(xs, x => x.total), paid: xs.length ? sum(xs, invPaid) : num(r.paid)}; };
   const body = rows.map(r => {
-    const variance = num(r.budgeted) - num(r.committed);
+    const c = calc(r), spent = Math.max(num(r.committed), c.invoiced), variance = num(r.budgeted) - spent;
     return `<tr data-edit="budget" data-id="${esc(r.id)}"><td>${esc(r.category)}</td><td>${esc(r.item || "")}<div class="meta">${esc(r.vendor || "")}</div></td>
-      <td class="n">${money(r.budgeted)}</td><td class="n">${money(r.committed)}</td><td class="n">${money(r.paid)}</td>
-      <td class="n">${money(num(r.committed) - num(r.paid))}</td><td class="n ${num(r.committed) ? (variance < 0 ? "neg" : "pos") : ""}">${num(r.committed) ? money(variance) : "—"}</td></tr>`;
+      <td class="n">${money(r.budgeted)}</td><td class="n">${money(r.committed)}</td><td class="n">${c.n ? money(c.invoiced) + `<div class="meta">${c.n} invoice${c.n > 1 ? "s" : ""}</div>` : "—"}</td><td class="n">${money(c.paid)}</td>
+      <td class="n ${spent ? (variance < 0 ? "neg" : "pos") : ""}">${spent ? money(variance) : "—"}</td></tr>`;
   }).join("");
+  const unassigned = data.invoices.filter(x => !lineFor(x));
+  const unRow = unassigned.length ? `<tr data-view="invoices"><td>Not assigned</td><td class="meta">Invoices without a budget line. Open one in Expenses to assign it.</td><td class="n">—</td><td class="n">—</td><td class="n">${money(sum(unassigned, x => x.total))}<div class="meta">${unassigned.length} invoice${unassigned.length > 1 ? "s" : ""}</div></td><td class="n">${money(sum(unassigned, invPaid))}</td><td class="n">—</td></tr>` : "";
   const coRow = data.changeOrders.length ? `<tr data-view="changeOrders"><td>Change orders</td><td class="meta">Approved only</td><td class="n">—</td><td class="n">${money(coApproved)}</td><td class="n">—</td><td class="n">—</td><td class="n ${coApproved > 0 ? "neg" : ""}">${money(-coApproved)}</td></tr>` : "";
-  const contingency = num(project.contingency) ? `<p class="meta">Contingency set at ${num(project.contingency)}% (${money(budget * num(project.contingency) / 100)}) of the total budget.</p>` : "";
+  const tb = sum(rows, r => r.budgeted), tc = sum(rows, r => r.committed) + coApproved;
+  const ti = sum(rows, r => calc(r).invoiced) + sum(unassigned, x => x.total), tp = sum(rows, r => calc(r).paid) + sum(unassigned, invPaid);
+  const contingency = num(project.contingency) ? `<p class="meta">Contingency set at ${num(project.contingency)}% (${money((num(project.budget) || tb) * num(project.contingency) / 100)}) of the total budget.</p>` : "";
   return head("budget") + `
     ${num(project.budget) && Math.abs(num(project.budget) - tb) > 1 ? `<p class="banner">Line items add up to ${money(tb)}; your total project budget is ${money(project.budget)}.</p>` : ""}
     <div class="tablewrap"><table>
-      <thead><tr><th>Category</th><th>Description</th><th class="n">Budgeted</th><th class="n">Committed</th><th class="n">Paid</th><th class="n">Still owed</th><th class="n">Variance</th></tr></thead>
-      <tbody>${body}${coRow}</tbody>
-      <tfoot><tr><td colspan="2">Total</td><td class="n">${money(tb)}</td><td class="n">${money(committed)}</td><td class="n">${money(paid)}</td><td class="n">${money(committed - paid)}</td><td class="n ${tb - committed < 0 ? "neg" : "pos"}">${money(tb - committed)}</td></tr></tfoot>
-    </table></div>${contingency}<p class="meta">Variance is budgeted minus committed for lines that have a contract amount. Tap a row to edit.</p>`;
+      <thead><tr><th>Category</th><th>Description</th><th class="n">Budgeted</th><th class="n">Committed</th><th class="n">Invoiced</th><th class="n">Paid</th><th class="n">Variance</th></tr></thead>
+      <tbody>${body}${unRow}${coRow}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="n">${money(tb)}</td><td class="n">${money(tc)}</td><td class="n">${money(ti)}</td><td class="n">${money(tp)}</td><td class="n ${tb - Math.max(tc, ti) < 0 ? "neg" : "pos"}">${money(tb - Math.max(tc, ti))}</td></tr></tfoot>
+    </table></div>${contingency}<p class="meta">Invoiced and Paid come from the invoices assigned to each line in Expenses. Lines with no invoices use the Paid amount you enter. Variance is budgeted minus whichever is higher, committed or invoiced. Tap a row to edit.</p>`;
 }
 
 // ---- Change orders ----
@@ -642,11 +948,773 @@ function vConversations(){
   return head("conversations") + (roles.length > 1 ? chips("conversations", roles) : "") + `<div style="display:grid;gap:10px;max-width:780px">${list.map(c => `
     <div class="card" data-edit="conversations" data-id="${esc(c.id)}" tabindex="0" role="button">
       <div class="meta">${fmtDate(c.date)}${c.method ? " · " + esc(c.method) : ""}</div>
-      <h3>${esc(c.person)}${c.role ? ` <span class="meta" style="font-family:Barlow,sans-serif;font-size:15px;font-weight:400">${esc(c.role)}</span>` : ""}</h3>
+      <h3>${esc(c.person)}${c.role ? ` <span class="meta" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px;font-weight:400">${esc(c.role)}</span>` : ""}</h3>
+      ${(() => { const k = contactFor(c); const co = k && companyName(k); return co ? `<div class="meta">${esc(co)}</div>` : ""; })()}
       ${c.subject ? `<div style="font-weight:600">${esc(c.subject)}</div>` : ""}
       ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ""}
       ${c.followUp ? `<p class="notes"><span class="badge warn">Follow up${c.followUpDate ? " by " + fmtShort(c.followUpDate) : ""}</span> ${esc(c.followUp)}</p>` : ""}
       ${filesHTML(c.files)}</div>`).join("")}</div>`;
+}
+
+// ---- Expenses / invoices ----
+const INV_CATS = S.invoices.fields.find(f => f.k === "category").o;
+const LABEL_TO_CAT = {"General contractor":"General contractor","Designer":"Designer","Architect":"Architect","Engineer":"Engineer","Subcontractor":"Subcontractor","Supplier":"Materials & supplies","Inspector":"Permits & inspections","Lender":"Financing","Other":"Other"};
+const CAT_COLORS = ["#7E9474","#963A2D","#B98A3E","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
+const catColor = c => CAT_COLORS[Math.max(0, INV_CATS.indexOf(c)) % CAT_COLORS.length];
+const kfmt = n => n >= 1000 ? "$" + (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : "$" + Math.round(n);
+function invHeld(x){ return x.status === "Paid" ? 0 : Math.min(num(x.holdback), num(x.total)); }
+function invPaid(x){ return x.status === "Paid" ? num(x.total) : x.status === "Holdback held" ? Math.max(0, num(x.total) - num(x.holdback)) : x.status === "Partially paid" ? Math.min(num(x.paidAmount), num(x.total)) : 0; }
+function invOwing(x){ return Math.max(0, num(x.total) - invHeld(x) - invPaid(x)); }
+function lineFor(x){ return data.budget.find(b => b.id === x.budgetLineId) || (!x.budgetLineId && x.budgetLine ? data.budget.find(b => lc(b.category) === lc(x.budgetLine)) : null); }
+function lineName(b){ return b ? b.category + (b.item ? " — " + b.item : "") : ""; }
+const CAT_LINE_WORDS = {"Architect":["architect","design"],"Designer":["design","interior"],"Engineer":["engineer"],"Permits & inspections":["permit"],"General contractor":["general","contract","construction"],"Materials & supplies":["material"],"Financing":["financ","interest"]};
+function guessBudgetLine(inv){
+  const v = lc(inv.vendor);
+  let b = v && data.budget.find(b => lc(b.vendor) && (lc(b.vendor) === v || v.includes(lc(b.vendor)) || lc(b.vendor).includes(v)));
+  if(!b){ const words = CAT_LINE_WORDS[inv.category] || []; b = data.budget.find(b => words.some(w => lc(b.category).includes(w))); }
+  return b ? b.id : "";
+}
+const HOLDBACK_CATS = ["General contractor","Subcontractor"];
+function defaultHoldback(inv){
+  if(!HOLDBACK_CATS.includes(inv.category)) return "";
+  const base = num(inv.subtotal) || (num(inv.total) - num(inv.tax));
+  return base > 0 ? Math.round(base * 10) / 100 : "";
+}
+
+async function uploadToStorage(file){
+  const path = `${crypto.randomUUID()}/${file.name.replace(/[^\w.\-]+/g, "_")}`;
+  const {error} = await sb.storage.from(BUCKET).upload(path, file, {contentType: file.type || "application/octet-stream"});
+  if(error) throw error;
+  const {data: su} = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 6);
+  if(su && su.signedUrl) urlCache[path] = su.signedUrl;
+  return {path, name: file.name, type: file.type || "", size: file.size};
+}
+
+function vInvoices(){
+  const actions = canWrite ? `<button class="btn" data-add="invoices">Add manually</button><label class="btn primary" style="cursor:pointer">Upload invoices<input type="file" id="invUpload" multiple accept=".pdf,application/pdf,image/*" hidden></label>` : "";
+  const header = `<div class="viewhead"><div><h2>Expenses</h2><p>${S.invoices.blurb}</p></div><div class="row">${actions}</div></div>`;
+  if(!data.invoices.length) return header + `<div class="empty"><h3>No invoices yet</h3><p>Upload PDF invoices, several at once if you like. The vendor, invoice number, dates, tax and total are read from each PDF, and the category is set from your contacts when the vendor matches. Photos and scanned invoices are saved too, but you'll fill in their details yourself.</p><div class="row">${canWrite ? `<label class="btn primary" style="cursor:pointer">Upload invoices<input type="file" id="invUpload" multiple accept=".pdf,application/pdf,image/*" hidden></label><button class="btn" data-add="invoices">Add manually</button>` : ""}</div></div>`;
+  const t = todayISO();
+  const all = data.invoices;
+  const total = sum(all, x => x.total), paid = sum(all, invPaid), owing = sum(all, invOwing), held = sum(all, invHeld);
+  const overdue = all.filter(x => invOwing(x) > 0 && x.dueDate && x.dueDate < t);
+  const review = all.filter(x => x.needsReview);
+  const tax = sum(all, x => x.tax);
+
+  // by category
+  const cats = {};
+  all.forEach(x => { const c = x.category || "Other"; (cats[c] ||= {total: 0, paid: 0, n: 0}); cats[c].total += num(x.total); cats[c].paid += invPaid(x); cats[c].n++; });
+  const catKeys = Object.keys(cats).sort((a, b) => cats[b].total - cats[a].total);
+  const maxCat = Math.max(1, ...catKeys.map(k => cats[k].total));
+  const catHTML = catKeys.map(k => `<div class="catbar"><span>${esc(k)} <span class="meta">(${cats[k].n})</span></span>
+    <div class="track" title="${esc(k)}: ${money(cats[k].paid)} paid of ${money(cats[k].total)}"><i style="width:${cats[k].paid / maxCat * 100}%;background:${catColor(k)}"></i><i style="width:${(cats[k].total - cats[k].paid) / maxCat * 100}%;background:${catColor(k)};opacity:.35"></i></div>
+    <b style="font-variant-numeric:tabular-nums">${money(cats[k].total)}</b></div>`).join("");
+
+  // by month (invoice date)
+  const dated = all.filter(x => x.date);
+  let monthHTML = "";
+  if(dated.length){
+    const first = dated.map(x => x.date.slice(0, 7)).sort()[0], last = [t.slice(0, 7), ...dated.map(x => x.date.slice(0, 7))].sort().slice(-1)[0];
+    const months = []; let [y, m] = first.split("-").map(Number);
+    while(true){ const key = y + "-" + String(m).padStart(2, "0"); months.push(key); if(key >= last || months.length > 36) break; m++; if(m > 12){ m = 1; y++; } }
+    const byM = Object.fromEntries(months.map(k => [k, 0]));
+    dated.forEach(x => { const k = x.date.slice(0, 7); if(k in byM) byM[k] += num(x.total); });
+    const maxM = Math.max(1, ...Object.values(byM));
+    let running = 0;
+    monthHTML = `<div class="months">${months.map(k => { running += byM[k]; const d = D(k + "-01"); return `<div title="${d.toLocaleDateString(undefined, {month: "long", year: "numeric"})}: ${money(byM[k])} (running total ${money(running)})"><span class="v">${byM[k] ? kfmt(byM[k]) : ""}</span><b style="height:${byM[k] / maxM * 100}%"></b>${d.toLocaleDateString(undefined, {month: "short"})}${d.getMonth() === 0 || k === months[0] ? `<br>${d.getFullYear()}` : ""}</div>`; }).join("")}</div>`;
+  }
+
+  const present = INV_CATS.filter(c => all.some(x => (x.category || "Other") === c));
+  const list = all.filter(x => filters.invoices === "All" || (x.category || "Other") === filters.invoices)
+    .filter(x => filters.invoiceStatus === "All" || (filters.invoiceStatus === "Paid" ? invOwing(x) === 0 : filters.invoiceStatus === "Overdue" ? (invOwing(x) > 0 && x.dueDate && x.dueDate < t) : filters.invoiceStatus === "Holdback" ? invHeld(x) > 0 : invOwing(x) > 0))
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const rows = list.map(x => {
+    const isOver = invOwing(x) > 0 && x.dueDate && x.dueDate < t;
+    const st = x.needsReview ? badge("Check details", "warn") : isOver ? badge("Overdue", "bad") : badge(x.status || "Unpaid", x.status === "Paid" ? "good" : (x.status === "Partially paid" || x.status === "Holdback held") ? "warn" : "");
+    return `<tr data-edit="invoices" data-id="${esc(x.id)}" class="${x.needsReview ? "needs" : ""}"><td>${fmtDate(x.date) || "—"}</td><td>${esc(x.vendor || "Unknown vendor")}<div class="meta">${esc(x.invoiceNumber ? "#" + x.invoiceNumber : "")}</div></td>
+      <td><span class="badge" style="background:color-mix(in srgb, ${catColor(x.category || "Other")} 20%, transparent)">${esc(x.category || "Other")}</span></td>
+      <td class="n">${money(x.total)}</td><td class="n">${money(invPaid(x))}</td>
+      <td>${st}${invHeld(x) ? `<div class="meta">${money(invHeld(x))} holdback</div>` : ""}${x.status !== "Unpaid" && x.status ? `<div class="meta">${esc([x.paymentMethod, x.paidDate && fmtShort(x.paidDate)].filter(Boolean).join(" · "))}</div>` : ""}${x.dueDate && invOwing(x) > 0 ? `<div class="meta">due ${fmtShort(x.dueDate)}</div>` : ""}
+      ${invOwing(x) > 0 && canWrite ? `<button class="btn" style="margin-top:4px;padding:3px 10px;font-size:14px" data-markpaid="${esc(x.id)}">Mark paid</button>` : ""}</td>
+      <td>${(x.files || []).length ? `<a href="${esc(fileUrl(x.files[0].path) || "#")}" target="_blank" rel="noopener" data-stop aria-label="Open invoice file">${fileIcon(x.files[0].type)}</a>` : ""}</td></tr>`;
+  }).join("");
+  const ft = sum(list, x => x.total), fp = sum(list, invPaid), fo = sum(list, invOwing), fh = sum(list, invHeld);
+
+  return header + `
+    ${review.length ? `<p class="banner">${review.length} uploaded invoice${review.length > 1 ? "s need" : " needs"} a quick check. They're marked in the list below.</p>` : ""}
+    <div class="panel" style="margin-bottom:14px"><div class="legend" style="margin-top:0">
+      <div><span>Total invoiced</span><b>${money(total)}</b></div>
+      <div><span>Paid</span><b>${money(paid)}</b></div>
+      <div><span>Still owing</span><b class="${overdue.length ? "neg" : ""}">${money(owing)}</b></div>
+      ${held ? `<div><span>Holdback held</span><b>${money(held)}</b></div>` : ""}
+      <div><span>Tax included</span><b>${money(tax)}</b></div>
+      ${overdue.length ? `<div><span>Overdue</span><b class="neg">${overdue.length} · ${money(sum(overdue, invOwing))}</b></div>` : ""}
+    </div>${(() => {
+      const bm = {}; all.forEach(x => { const p = invPaid(x); if(p) bm[x.paymentMethod || "Method not recorded"] = (bm[x.paymentMethod || "Method not recorded"] || 0) + p; });
+      const ks = Object.keys(bm).sort((a, b) => bm[b] - bm[a]);
+      return ks.length ? `<p class="meta" style="margin:10px 0 0">Paid by ${ks.map(k => `${esc(k.toLowerCase())} <b style="color:var(--ink)">${money(bm[k])}</b>`).join(" · ")}</p>` : "";
+    })()}</div>
+    ${holdbackPanel()}
+    <div class="ov" style="margin-bottom:18px">
+      <div class="panel"><h3>By category</h3>${catHTML}<p class="meta" style="margin:8px 0 0">Solid is paid, lighter is still owing.</p></div>
+      <div class="panel"><h3>By month</h3>${monthHTML || `<p class="meta">Add invoice dates to see spending over time.</p>`}</div>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-bottom:8px"><div style="display:grid;gap:6px">${chips("invoiceStatus", held ? ["Owing", "Overdue", "Holdback", "Paid"] : ["Owing", "Overdue", "Paid"]).replace('class="chips"', 'class="chips" style="margin:0"')}${present.length > 1 ? chips("invoices", present).replace('class="chips"', 'class="chips" style="margin:0"') : ""}</div><button class="btn ghost" data-export="invoices">Export to spreadsheet (CSV)</button></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th class="n">Total</th><th class="n">Paid</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="3">${esc([filters.invoiceStatus !== "All" && filters.invoiceStatus, filters.invoices !== "All" && filters.invoices].filter(Boolean).join(", ") || "All invoices")} (${list.length})</td><td class="n">${money(ft)}</td><td class="n">${money(fp)}</td><td colspan="2">${money(fo)} owing${fh ? ` · ${money(fh)} held` : ""}</td></tr></tfoot>
+    </table></div>`;
+}
+
+// Reading PDF invoices in the browser
+let pdfjsReady = null;
+function loadPdfJs(){
+  if(pdfjsReady) return pdfjsReady;
+  pdfjsReady = new Promise((res, rej) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; res(window.pdfjsLib); };
+    sc.onerror = () => { pdfjsReady = null; rej(new Error("pdf reader failed to load")); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsReady;
+}
+async function pdfLines(file){
+  const lib = await loadPdfJs();
+  const doc = await lib.getDocument({data: await file.arrayBuffer()}).promise;
+  const lines = [];
+  for(let p = 1; p <= Math.min(doc.numPages, 3); p++){
+    const page = await doc.getPage(p);
+    const tc = await page.getTextContent();
+    const rows = new Map();
+    tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); });
+    [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  ").replace(/\s{3,}/g, "   ").trim()));
+  }
+  return lines.filter(Boolean);
+}
+const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
+function mkDate(y, m, d){ y = +y; m = +m; d = +d; if(!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y > 1990)) return ""; return y + "-" + String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0"); }
+function findDate(str){
+  let m = str.match(/\b(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/); if(m) return mkDate(m[1], m[2], m[3]);
+  m = str.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(20\d{2})\b/i); if(m) return mkDate(m[3], MONTHS[m[1].toLowerCase()], m[2]);
+  m = str.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sept?|oct|nov|dec)[a-z]*\.?,?\s+(20\d{2})\b/i); if(m) return mkDate(m[3], MONTHS[m[2].toLowerCase()], m[1]);
+  m = str.match(/\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](20\d{2})\b/); if(m){ const a = +m[1], b = +m[2]; return a > 12 ? mkDate(m[3], b, a) : mkDate(m[3], a, b); }
+  return "";
+}
+function amounts(str){
+  const out = []; const re = /(-?)\$?\s?(\d{1,3}(?:,\d{3})+(?:\.\d{2})?|\d+\.\d{2})(?!\s?%)/g; let m;
+  while((m = re.exec(str))) out.push(parseFloat(m[2].replace(/,/g, "")) * (m[1] ? -1 : 1));
+  return out;
+}
+function afterLabel(lines, re, getter, skip){
+  for(let i = 0; i < lines.length; i++){
+    if(!re.test(lines[i]) || (skip && skip.test(lines[i]))) continue;
+    const v = getter(lines[i].slice(lines[i].search(re))) || (lines[i + 1] ? getter(lines[i + 1]) : null);
+    if(v) return v;
+  }
+  return null;
+}
+function parseInvoice(lines, fileName){
+  const out = {};
+  const text = lines.join("\n"), lt = text.toLowerCase();
+  const lastAmt = s => { const a = amounts(s).filter(n => n > 0); return a.length ? a[a.length - 1] : null; };
+  out.total = afterLabel(lines, /amount\s+due|balance\s+due|total\s+due|grand\s+total|invoice\s+total|total\s+amount|amount\s+payable/i, lastAmt)
+    || afterLabel(lines, /\btotal\b/i, lastAmt, /sub[\s-]?total|total\s+tax|tax\s+total/i);
+  if(!out.total){ const all = amounts(text).filter(n => n > 0); if(all.length) out.total = Math.max(...all); }
+  out.subtotal = afterLabel(lines, /sub[\s-]?total/i, lastAmt) || "";
+  out.tax = afterLabel(lines, /\b(h\.?s\.?t|g\.?s\.?t|p\.?s\.?t|q\.?s\.?t|sales\s+tax|tax)\b/i, lastAmt, /\btotal\b(?!\s+tax)|tax\s+(id|number|no|registration|#)|registration|business\s+(no|number)|\bbn\b/i) || "";
+  if(out.tax && out.total && out.tax >= out.total) out.tax = "";
+  if(!out.tax && out.subtotal && out.total && out.total > out.subtotal) out.tax = Math.round((out.total - out.subtotal) * 100) / 100;
+  const inv = text.match(/invoice\s*(?:no\.?|number|num\.?|#)\s*[:#.]?\s*([A-Z0-9][A-Z0-9\-\/]{1,20})/i) || text.match(/\binv[\s#:-]+([A-Z0-9\-]{2,20})/i);
+  if(inv && !/^(date|to|from)$/i.test(inv[1])) out.invoiceNumber = inv[1];
+  out.dueDate = afterLabel(lines, /due\s+date|payment\s+due|date\s+due|\bdue\b/i, findDate) || "";
+  out.date = afterLabel(lines, /invoice\s+date|date\s+of\s+issue|date\s+issued|issue\s+date|\bdate\b/i, s => { const d = findDate(s); return d && d !== out.dueDate ? d : ""; }, /due/i) || findDate(text) || "";
+  if(/net\s*30/i.test(text) && out.date && !out.dueDate) out.dueDate = addDays(out.date, 30);
+  // vendor: match your companies and contacts first
+  let co = data.companies.find(c => c.name && lt.includes(lc(c.name)))
+    || data.companies.find(c => c.website && lt.includes(lc(c.website).replace(/^https?:\/\//, "").replace(/^www\./, "")));
+  let k = null;
+  if(!co){ k = data.contacts.find(x => x.email && lt.includes(lc(x.email))) || data.contacts.find(x => x.company && lt.includes(lc(x.company))); if(k) co = companyOf(k); }
+  if(co){ out.vendor = co.name; const lab = co.label || (data.contacts.find(x => x.companyId === co.id) || {}).label; if(lab) out.category = LABEL_TO_CAT[lab]; }
+  else if(k){ out.vendor = k.company || k.name; if(k.label) out.category = LABEL_TO_CAT[k.label]; }
+  else {
+    const me = lc(project.name), cand = lines.slice(0, 8).find(l => /[a-z]{3}/i.test(l) && !/invoice|bill\s+to|statement|page\s+\d|^date|^to\b|^from\b|@|\d{3}[\s.\-]\d{4}/i.test(l) && l.split(/\s+/).length <= 7 && lc(l) !== me);
+    if(cand) out.vendor = cand.replace(/\s{2,}.*/, "");
+  }
+  if(!out.category){
+    if(/permit|city of|municipal|development charge|building department/i.test(text)) out.category = "Permits & inspections";
+    else { const g = guessLabel(text); out.category = g ? LABEL_TO_CAT[g] : ""; }
+  }
+  if(!out.vendor) out.vendor = fileName.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ");
+  out.status = /\bpaid\s+in\s+full\b|\bpaid\b.*\bthank you\b|balance\s+due\s*[:$]?\s*\$?\s*0\.00/i.test(text) ? "Paid" : "Unpaid";
+  return out;
+}
+
+async function handleInvoiceUpload(fileList){
+  const files = [...fileList]; if(!files.length) return;
+  const created = []; let failed = 0, unread = 0;
+  for(let i = 0; i < files.length; i++){
+    const f = files[i];
+    toast(`Reading invoice ${i + 1} of ${files.length}…`);
+    if(f.size > MAX_MB * 1024 * 1024){ failed++; continue; }
+    try {
+      let parsed = {};
+      const isPdf = /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
+      if(isPdf){ try { const lines = await pdfLines(f); if(lines.length > 2) parsed = parseInvoice(lines, f.name); else unread++; } catch(e){ unread++; } }
+      else unread++;
+      if(!parsed.vendor) parsed.vendor = f.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ");
+      const fileRec = await uploadToStorage(f);
+      parsed.holdback = defaultHoldback(parsed);
+      parsed.budgetLineId = guessBudgetLine(parsed);
+      const body = {vendor: "", category: "", invoiceNumber: "", budgetLineId: "", date: "", dueDate: "", subtotal: "", tax: "", total: "", status: "Unpaid", paidAmount: "", paidDate: "", notes: "", ...parsed, files: [fileRec], needsReview: true, created: Date.now(), updated: Date.now()};
+      created.push(await insertOne("invoices", body));
+    } catch(e){ failed++; }
+  }
+  await loadAll();
+  const msg = [`${created.length} invoice${created.length === 1 ? "" : "s"} added`, unread && `${unread} couldn't be read automatically`, failed && `${failed} failed to upload`].filter(Boolean).join(", ");
+  toast(msg + ".");
+  if(created.length === 1){ const rec = data.invoices.find(x => x.id === created[0]); if(rec) openForm("invoices", rec); }
+}
+
+function holdbackPanel(){
+  const byV = {};
+  data.invoices.forEach(x => { const h = invHeld(x); if(h > 0){ const k = x.vendor || "Unknown vendor"; (byV[k] ||= {held: 0, n: 0}); byV[k].held += h; byV[k].n++; } });
+  const vs = Object.keys(byV).sort();
+  if(!vs.length) return "";
+  const t = todayISO();
+  return `<div class="panel" style="margin-bottom:14px"><h3 style="font-size:22px">Holdbacks</h3>
+    <p class="meta" style="margin:4px 0 10px">Ontario's Construction Act generally has owners hold back 10% of what they pay contractors until the lien period ends, usually 60 days after the work is finished. Before releasing, check that no liens have been registered against your property; your lawyer can confirm.</p>
+    ${vs.map(v => {
+      const rec = data.holdbacks.find(h => lc(h.vendor) === lc(v));
+      const done = rec && rec.completionDate, eligible = done ? addDays(rec.completionDate, 60) : "";
+      const ready = eligible && eligible <= t;
+      return `<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding:10px 0;gap:10px">
+        <div><b>${esc(v)}</b> <span class="amount" style="font-size:20px;margin-left:6px">${money(byV[v].held)}</span><div class="meta">${byV[v].n} invoice${byV[v].n > 1 ? "s" : ""}. ${done ? `Work finished ${fmtDate(rec.completionDate)}. ${ready ? `<b class="pos">Lien period over since ${fmtDate(eligible)}</b>` : `Earliest release ${fmtDate(eligible)}`}` : "Add the date their work was finished to see when it can be released."}</div></div>
+        ${canWrite ? `<div class="row"><button class="btn" data-hbset="${esc(v)}">${done ? "Change finish date" : "Set finish date"}</button><button class="btn ${ready ? "primary" : ""}" data-hbrelease="${esc(v)}">Release holdback</button></div>` : ""}
+      </div>`;
+    }).join("")}</div>`;
+}
+function openRelease(vendor){
+  const dlg = $("#dlg"); if(dlg.open) dlg.close();
+  const items = data.invoices.filter(x => invHeld(x) > 0 && (x.vendor || "Unknown vendor") === vendor);
+  const amt = sum(items, invHeld);
+  const rec = data.holdbacks.find(h => lc(h.vendor) === lc(vendor));
+  const eligible = rec && rec.completionDate ? addDays(rec.completionDate, 60) : "";
+  const early = !eligible || eligible > todayISO();
+  dlg.innerHTML = `<form id="relForm" method="dialog">
+    <div class="m-head"><h2>Release holdback</h2><button type="button" class="btn ghost" id="rlClose">Close</button></div>
+    <div class="m-body">
+      <p class="f" style="margin:0"><b>${esc(vendor)}</b><br><span class="meta">${money(amt)} held across ${items.length} invoice${items.length > 1 ? "s" : ""}</span></p>
+      ${early ? `<p class="banner f" style="margin:0">${eligible ? `The 60-day lien period runs until ${fmtDate(eligible)}.` : "You haven't recorded when their work was finished."} Releasing early means you could be liable if a subcontractor or supplier registers a lien.</p>` : ""}
+      <div class="f half"><label for="rlMethod">How it was paid</label><select id="rlMethod"><option value=""></option>${PAY_METHODS.map(m => `<option>${m}</option>`).join("")}</select></div>
+      <div class="f half"><label for="rlDate">Date paid</label><input id="rlDate" type="date" value="${todayISO()}"></div>
+      <div class="f"><label for="rlRef">Cheque # or confirmation #</label><input id="rlRef" type="text"></div>
+      <p class="err f" id="rlErr" hidden></p>
+    </div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="rlCancel">Cancel</button><button type="submit" class="btn primary" id="rlSave">Release ${money(amt)}</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#rlClose").onclick = close; $("#rlCancel").onclick = close;
+  $("#relForm").onsubmit = async e => {
+    e.preventDefault();
+    const method = $("#rlMethod").value, date = $("#rlDate").value, ref = $("#rlRef").value.trim();
+    if(!method){ const er = $("#rlErr"); er.hidden = false; er.textContent = "Choose how it was paid."; return; }
+    const btn = $("#rlSave"); btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      for(const x of items){
+        const {id, ...rest} = x;
+        const note = `Holdback of ${money(invHeld(x))} released by ${method} on ${fmtDate(date)}${ref ? " (" + ref + ")" : ""}.`;
+        await run(sb.from("records").update({data: {...rest, status: "Paid", paidAmount: num(x.total), holdbackReleased: date, notes: [x.notes, note].filter(Boolean).join("\n"), updated: Date.now()}, updated_at: new Date().toISOString()}).eq("id", id));
+      }
+      await loadAll(); close(); toast(`Holdback of ${money(amt)} released.`);
+    } catch(e2){ btn.disabled = false; btn.textContent = "Try again"; }
+  };
+  dlg.showModal();
+}
+
+function openMarkPaid(x){
+  const dlg = $("#dlg");
+  const owing = invOwing(x);
+  dlg.innerHTML = `<form id="payForm" method="dialog">
+    <div class="m-head"><h2>Mark paid</h2><button type="button" class="btn ghost" id="pyClose">Close</button></div>
+    <div class="m-body">
+      <p class="f" style="margin:0"><b>${esc(x.vendor || "Invoice")}</b>${x.invoiceNumber ? ` <span class="meta">#${esc(x.invoiceNumber)}</span>` : ""}<br><span class="meta">Total ${money(x.total)}${invPaid(x) ? `, ${money(invPaid(x))} already paid` : ""}${invHeld(x) ? `, ${money(invHeld(x))} holdback kept back` : ""}</span></p>
+      <div class="f half"><label for="pyMethod">How it was paid</label><select id="pyMethod" required><option value=""></option>${PAY_METHODS.map(m => `<option ${m === x.paymentMethod ? "selected" : ""}>${m}</option>`).join("")}</select></div>
+      <div class="f half"><label for="pyDate">Date paid</label><input id="pyDate" type="date" value="${todayISO()}"></div>
+      <div class="f half"><label for="pyAmt">Amount paid now</label><input id="pyAmt" type="number" step="0.01" inputmode="decimal" value="${owing ? owing.toFixed(2) : ""}"></div>
+      <div class="f half"><label for="pyRef">Cheque # or confirmation #</label><input id="pyRef" type="text" value=""></div>
+      <p class="meta f" style="margin:0;font-size:14px">The amount owing ${invHeld(x) ? "leaves out the holdback. " : ""}Enter less to record a partial payment.</p>
+      <p class="err f" id="pyErr" hidden></p>
+    </div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="pyCancel">Cancel</button><button type="submit" class="btn primary" id="pySave">Save payment</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#pyClose").onclick = close; $("#pyCancel").onclick = close;
+  $("#payForm").onsubmit = async e => {
+    e.preventDefault();
+    const err = $("#pyErr"), method = $("#pyMethod").value, amt = num($("#pyAmt").value);
+    if(!method){ err.hidden = false; err.textContent = "Choose how it was paid."; return; }
+    if(amt <= 0){ err.hidden = false; err.textContent = "Enter the amount paid."; return; }
+    const newPaid = Math.round((invPaid(x) + amt) * 100) / 100;
+    const full = newPaid >= num(x.total) - 0.005;
+    const toHold = !full && invHeld(x) > 0 && newPaid >= num(x.total) - invHeld(x) - 0.005;
+    const ref = $("#pyRef").value.trim();
+    const note = full && !invPaid(x) ? "" : `Payment of ${money(amt)} by ${method} on ${fmtDate($("#pyDate").value)}${ref ? " (" + ref + ")" : ""}.`;
+    const {id, ...rest} = x;
+    const body = {...rest, status: full ? "Paid" : toHold ? "Holdback held" : "Partially paid", paidAmount: full ? num(x.total) : newPaid, paidDate: $("#pyDate").value, paymentMethod: method,
+      paymentRef: ref || x.paymentRef || "", notes: note ? [x.notes, note].filter(Boolean).join("\n") : (x.notes || ""), updated: Date.now()};
+    const btn = $("#pySave"); btn.disabled = true; btn.textContent = "Saving…";
+    try { await save("invoices", id, body); close(); toast(full ? "Marked as paid." : toHold ? `Paid, with ${money(invHeld(x))} holdback kept back.` : `Partial payment recorded. ${money(num(x.total) - invHeld(x) - newPaid)} still owing.`); }
+    catch(e2){ btn.disabled = false; btn.textContent = "Save payment"; err.hidden = false; err.textContent = "Couldn't save. Check your connection and try again."; }
+  };
+  dlg.showModal();
+}
+
+function exportInvoices(){
+  const cols = [["date","Invoice date"],["vendor","Vendor"],["invoiceNumber","Invoice #"],["category","Category"],["budgetLine","Budget line"],["holdback","Holdback"],["held","Holdback still held"],["subtotal","Subtotal"],["tax","Tax"],["total","Total"],["status","Status"],["paid","Paid"],["owing","Owing"],["dueDate","Due date"],["paidDate","Date paid"],["paymentMethod","Payment method"],["paymentRef","Reference"],["notes","Notes"]];
+  const q = v => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+  const rows = data.invoices.slice().sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(x => cols.map(([k]) => q(k === "paid" ? invPaid(x) : k === "owing" ? invOwing(x) : k === "held" ? invHeld(x) : k === "budgetLine" ? lineName(lineFor(x)) : x[k])).join(","));
+  const csv = [cols.map(c => c[1]).join(","), ...rows].join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], {type: "text/csv"}));
+  a.download = (project.name ? project.name.replace(/[^\w]+/g, "-") + "-" : "") + "invoices-" + todayISO() + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+// ---- Permits & inspections ----
+function vPermits(){
+  const starter = canWrite ? `<button class="btn" data-starter="permits">Add typical Ontario inspections</button>` : "";
+  if(!data.permits.length) return head("permits") + empty("permits", "No permits or inspections yet", "Track your building permit and each inspection: when it's booked, whether it passed, and what the inspector said. Start from a typical list for an addition and adjust it to match your permit.", starter);
+  const order = ["Building permit", "Other approval", "Inspection"];
+  const list = data.permits.slice().sort((a, b) => (order.indexOf(a.type) - order.indexOf(b.type)) || (num(a.seq) - num(b.seq)) || (num(a.created) - num(b.created)));
+  const insp = list.filter(x => x.type === "Inspection");
+  const done = insp.filter(x => x.status === "Passed" || x.status === "Not required").length;
+  const failed = insp.filter(x => /Failed/.test(x.status || ""));
+  const next = insp.filter(x => x.status === "Booked" && x.date).sort((a, b) => a.date.localeCompare(b.date))[0];
+  return head("permits") + `
+    ${insp.length ? `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><b>${done} of ${insp.length} inspections passed</b><span class="meta">${next ? `Next: ${esc(next.name)}, ${fmtDate(next.date)}` : ""}</span></div><div class="progress" style="margin-top:8px"><i style="width:${done / insp.length * 100}%"></i></div>${failed.length ? `<p class="neg" style="margin:8px 0 0">${failed.length} needs re-inspection: ${failed.map(f => esc(f.name)).join(", ")}</p>` : ""}</div>` : ""}
+    <div class="list1">${list.map(x => `<div class="card" data-edit="permits" data-id="${esc(x.id)}" tabindex="0" role="button">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${esc(x.type || "")}${x.permitNumber ? " · #" + esc(x.permitNumber) : ""}</span><h3>${esc(x.name)}</h3></div>${badge(x.status || "Not started", statusKind(x.status))}</div>
+      <div class="meta">${esc([x.date && (x.status === "Applied" ? "Applied " : "Booked ") + fmtDate(x.date), x.resultDate && "Result " + fmtDate(x.resultDate), x.inspector].filter(Boolean).join(" · "))}</div>
+      ${x.notes ? `<p class="notes">${esc(x.notes)}</p>` : ""}${filesHTML(x.files)}</div>`).join("")}</div>`;
+}
+
+// ---- Photos ----
+function vPhotos(){
+  const btn = canWrite ? `<button class="btn primary" data-photoupload>Upload photos</button>` : "";
+  const header = `<div class="viewhead"><div><h2>Photos</h2><p>${S.photos.blurb}</p></div><div class="row">${btn}</div></div>`;
+  if(!data.photos.length) return header + `<div class="empty"><h3>No photos yet</h3><p>Upload progress photos with the date and room. Photos of plumbing, wiring and framing before the walls are closed are the ones you'll be most glad to have later.</p><div class="row">${btn}</div></div>`;
+  const rooms = [...new Set(data.photos.map(x => x.room).filter(Boolean))].sort();
+  const opts = [...(data.photos.some(x => x.insideWalls === "Yes") ? ["Inside walls"] : []), ...rooms];
+  const list = data.photos.filter(x => filters.photos === "All" || (filters.photos === "Inside walls" ? x.insideWalls === "Yes" : x.room === filters.photos));
+  const byDate = {};
+  list.forEach(x => (byDate[x.date || "No date"] ||= []).push(x));
+  const dates = Object.keys(byDate).sort().reverse();
+  return header + (opts.length ? chips("photos", opts) : "") + `<p class="meta" style="margin-top:-4px">${list.length} photo${list.length === 1 ? "" : "s"}</p>` + dates.map(d => `<div class="group"><h3>${d === "No date" ? d : fmtDate(d)}</h3><div class="gallery">${byDate[d].map(x => {
+    const f = (x.files || [])[0], u = f && fileUrl(f.path), isImg = f && (f.type || "").startsWith("image/");
+    return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener" data-stop>${isImg && u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(x.caption || x.room || "Photo")}" loading="lazy">` : `<span>${f ? fileIcon(f.type) : "📷"}</span>`}</a>
+      <button data-edit="photos" data-id="${esc(x.id)}"><b>${esc(x.room || "Photo")}</b>${x.insideWalls === "Yes" ? ` ${badge("Inside walls", "warn")}` : ""}<br><span class="meta">${esc(x.caption || x.phase || "")}</span></button></div>`;
+  }).join("")}</div></div>`).join("");
+}
+function openPhotoUpload(){
+  const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
+  dlg.innerHTML = `<form id="phForm" method="dialog">
+    <div class="m-head"><h2>Upload photos</h2><button type="button" class="btn ghost" id="phClose">Close</button></div>
+    <div class="m-body">
+      <div class="f"><label for="phFiles">Photos or videos</label><input id="phFiles" type="file" multiple accept="image/*,video/*"></div>
+      <div class="f half"><label for="phDate">Date taken</label><input id="phDate" type="date" value="${todayISO()}"></div>
+      <div class="f half"><label for="phRoom">Room or area</label><input id="phRoom" list="dl-rooms"></div>
+      <div class="f half"><label for="phPhase">Phase</label><select id="phPhase"><option value=""></option>${PHASES.map(p => `<option>${p}</option>`).join("")}</select></div>
+      <div class="f half"><label for="phWalls">Shows what's inside the walls?</label><select id="phWalls"><option>No</option><option>Yes</option></select></div>
+      <div class="f"><label for="phCap">Caption</label><input id="phCap" placeholder="Applies to every photo in this upload"></div>
+      <p class="uploading f" id="phState"></p>
+    </div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="phCancel">Cancel</button><button type="submit" class="btn primary" id="phSave">Upload</button></div></div></form>${datalists()}`;
+  const close = () => dlg.close();
+  $("#phClose").onclick = close; $("#phCancel").onclick = close;
+  $("#phForm").onsubmit = async e => {
+    e.preventDefault();
+    const files = [...$("#phFiles").files], st = $("#phState");
+    if(!files.length){ st.textContent = "Choose at least one photo."; return; }
+    const btn = $("#phSave"); btn.disabled = true;
+    const base = {date: $("#phDate").value || todayISO(), room: $("#phRoom").value.trim(), phase: $("#phPhase").value, insideWalls: $("#phWalls").value, caption: $("#phCap").value.trim()};
+    const bodies = []; let failed = 0;
+    for(let i = 0; i < files.length; i++){
+      st.textContent = `Uploading ${i + 1} of ${files.length}…`;
+      if(files[i].size > MAX_MB * 1024 * 1024){ failed++; continue; }
+      try { const fr = await uploadToStorage(files[i]); bodies.push({...base, files: [fr], created: Date.now() + i, updated: Date.now()}); } catch(err){ failed++; }
+    }
+    try { if(bodies.length) await insertMany("photos", bodies); close(); toast(`${bodies.length} photo${bodies.length === 1 ? "" : "s"} added${failed ? `, ${failed} failed` : ""}.`); }
+    catch(err){ btn.disabled = false; st.textContent = "Couldn't save. Try again."; }
+  };
+  dlg.showModal();
+}
+
+// ---- Selections ----
+function vSelections(){
+  if(!data.selections.length) return head("selections") + empty("selections", "No selections yet", "List everything you'll need to choose, like tile, fixtures, paint colours and hardware, with a date you need to decide by. Check your timeline: most finishes need deciding several weeks before they're installed.");
+  const t = todayISO();
+  const open = data.selections.filter(x => x.status !== "Decided" && x.status !== "Ordered").sort((a, b) => (a.decideBy || "9").localeCompare(b.decideBy || "9"));
+  const done = data.selections.filter(x => x.status === "Decided" || x.status === "Ordered").sort((a, b) => (a.item || "").localeCompare(b.item || ""));
+  const late = open.filter(x => x.decideBy && x.decideBy < t).length;
+  const card = x => `<div class="card" data-edit="selections" data-id="${esc(x.id)}" tabindex="0" role="button">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${esc([x.room, x.category].filter(Boolean).join(" · "))}</span><h3>${esc(x.item)}</h3></div>${badge(x.status || "To decide", statusKind(x.status))}</div>
+    ${x.decideBy && open.includes(x) ? `<div class="${x.decideBy < t ? "neg" : "meta"}">${x.decideBy < t ? "Overdue: was due " : "Decide by "}${fmtDate(x.decideBy)}</div>` : ""}
+    ${x.choice ? `<p class="notes"><b>Chosen:</b> ${esc(x.choice)}${x.cost ? ` · ${money(x.cost)}` : ""}${x.supplier ? ` · ${esc(x.supplier)}` : ""}</p>` : x.options ? `<p class="notes meta">${esc(x.options)}</p>` : ""}
+    ${firstImage(x.files)}
+    ${!open.includes(x) && canWrite ? (x.materialId ? `<p class="meta" style="margin:8px 0 0">Added to Materials</p>` : `<button class="btn" style="margin-top:8px" data-tomaterial="${esc(x.id)}">Add to materials</button>`) : ""}
+  </div>`;
+  return head("selections") + `${late ? `<p class="banner">${late} selection${late > 1 ? "s are" : " is"} past the decide-by date.</p>` : ""}
+    <div class="group"><h3>Still to decide <span class="meta">${open.length}</span></h3>${open.length ? `<div class="grid">${open.map(card).join("")}</div>` : `<p class="meta">Nothing waiting on a decision.</p>`}</div>
+    ${done.length ? `<div class="group"><h3>Decided <span class="meta">${done.length}</span></h3><div class="grid">${done.map(card).join("")}</div></div>` : ""}`;
+}
+async function selectionToMaterial(id){
+  const x = data.selections.find(s => s.id === id); if(!x) return;
+  const mid = await insertOne("materials", {item: x.choice || x.item, category: x.category || "", room: x.room || "", supplier: x.supplier || "", sku: "", qty: 1, unit: "", unitCost: x.cost || "", status: x.status === "Ordered" ? "Ordered" : "Specified", leadTime: "", needBy: "", link: x.link || "", notes: "From selection: " + x.item, files: x.files || [], created: Date.now(), updated: Date.now()});
+  const {id: _i, ...rest} = x;
+  await save("selections", id, {...rest, materialId: mid, updated: Date.now()});
+  toast("Added to Materials. Open it there to set the quantity.");
+}
+
+// ---- Punch list ----
+function vPunch(){
+  if(!data.punch.length) return head("punch") + empty("punch", "Nothing on the punch list", "Add anything that needs fixing, with a photo and who's responsible. Before the final payment and holdback release, make sure everything here is closed.");
+  const pr = {High: 0, Normal: 1, Low: 2};
+  const counts = {Open: 0, "In progress": 0, "Fixed – to check": 0, Closed: 0};
+  data.punch.forEach(x => counts[x.status || "Open"] = (counts[x.status || "Open"] || 0) + 1);
+  const notClosed = data.punch.length - counts.Closed;
+  const list = data.punch.filter(x => filters.punch === "All" || (filters.punch === "Open" ? x.status !== "Closed" : (x.status || "Open") === filters.punch))
+    .sort((a, b) => ((a.status === "Closed") - (b.status === "Closed")) || ((pr[a.priority] ?? 1) - (pr[b.priority] ?? 1)) || (a.dueDate || "9").localeCompare(b.dueDate || "9"));
+  const t = todayISO();
+  return head("punch") + `<p class="meta" style="margin-top:-6px">${notClosed} not closed: ${counts.Open} open, ${counts["In progress"]} in progress, ${counts["Fixed – to check"]} fixed and waiting for you to check. ${counts.Closed} closed.</p>`
+    + chips("punch", ["Open", "In progress", "Fixed – to check", "Closed"]).replace('data-val="Open"', 'data-val="Open" title="Everything not closed"')
+    + `<div class="grid">${list.map(x => `<div class="card" data-edit="punch" data-id="${esc(x.id)}" tabindex="0" role="button">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${esc([x.room, x.responsible].filter(Boolean).join(" · "))}</span><h3>${esc(x.item)}</h3></div>${badge(x.status || "Open", statusKind(x.status || "Open"))}</div>
+      <div class="meta">${x.priority === "High" ? `<b class="neg">High priority</b> · ` : ""}${x.found ? "Found " + fmtShort(x.found) : ""}${x.dueDate ? ` · <span class="${x.dueDate < t && x.status !== "Closed" ? "neg" : ""}">fix by ${fmtShort(x.dueDate)}</span>` : ""}</div>
+      ${x.notes ? `<p class="notes">${esc(x.notes)}</p>` : ""}${firstImage(x.files)}</div>`).join("")}</div>`;
+}
+
+// ---- Contractor documents ----
+const REQUIRED_DOCS = ["Contract", "Liability insurance certificate", "WSIB clearance certificate"];
+function companyNeedsDocs(name){
+  const co = data.companies.find(c => lc(c.name) === lc(name));
+  const labels = [co && co.label, ...data.contacts.filter(k => lc(companyName(k)) === lc(name)).map(k => k.label)];
+  return labels.some(l => l === "General contractor" || l === "Subcontractor");
+}
+function vDocuments(){
+  const t = todayISO(), soon = addDays(t, 30);
+  const names = new Map();
+  data.documents.forEach(d => names.set(lc(d.company), d.company));
+  data.companies.forEach(c => { if(companyNeedsDocs(c.name) && !names.has(lc(c.name))) names.set(lc(c.name), c.name); });
+  if(!names.size) return head("documents") + empty("documents", "No documents yet", "For each contractor, keep the signed contract, their liability insurance certificate, WSIB clearance certificate and any licences. Contractors and subcontractors in your Contacts appear here automatically with what's missing.");
+  const keys = [...names.keys()].sort();
+  const expiring = data.documents.filter(d => d.expiry && d.expiry <= soon);
+  return head("documents") + (expiring.length ? `<p class="banner">${expiring.filter(d => d.expiry < t).length} expired and ${expiring.filter(d => d.expiry >= t).length} expiring within 30 days. Ask for updated certificates before more work is done.</p>` : "")
+    + `<p class="meta" style="margin-top:-6px">In Ontario, ask each contractor for a current WSIB clearance certificate. If they don't have coverage and a worker is hurt, the homeowner can sometimes be held responsible.</p>`
+    + keys.map(k => {
+      const name = names.get(k), docs = data.documents.filter(d => lc(d.company) === k).sort((a, b) => REQUIRED_DOCS.indexOf(a.docType) - REQUIRED_DOCS.indexOf(b.docType));
+      const missing = companyNeedsDocs(name) ? REQUIRED_DOCS.filter(r => !docs.some(d => d.docType === r && !(d.expiry && d.expiry < t))) : [];
+      return `<div class="group"><h3>${esc(name)} ${missing.length ? `<span class="badge bad" style="font-family:'Libre Caslon Text',Georgia,serif">Missing: ${missing.map(esc).join(", ")}</span>` : docs.length ? `<span class="badge good" style="font-family:'Libre Caslon Text',Georgia,serif">Up to date</span>` : ""}</h3>
+        <div class="grid">${docs.map(d => `<div class="card" data-edit="documents" data-id="${esc(d.id)}" tabindex="0" role="button">
+          <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h3 style="font-size:19px">${esc(d.docType || "Document")}</h3>${d.expiry ? (d.expiry < t ? badge("Expired", "bad") : d.expiry <= soon ? badge("Expires soon", "warn") : badge("Valid", "good")) : ""}</div>
+          <div class="meta">${esc(d.title || "")}${d.expiry ? `${d.title ? " · " : ""}expires ${fmtDate(d.expiry)}` : ""}</div>${filesHTML(d.files)}</div>`).join("")}
+          ${canWrite ? `<button class="card" style="border-style:dashed;color:var(--muted)" data-adddoc="${esc(name)}" data-doctype="${esc(missing[0] || "")}">+ Add ${missing[0] ? esc(missing[0].toLowerCase()) : "a document"}</button>` : ""}</div></div>`;
+    }).join("");
+}
+
+// ---- Warranties ----
+function warrantyEnd(x){
+  if(x.warrantyEnd) return x.warrantyEnd;
+  if(x.purchaseDate && num(x.warrantyYears)){ const d = D(x.purchaseDate); d.setMonth(d.getMonth() + Math.round(num(x.warrantyYears) * 12)); return iso(d); }
+  return "";
+}
+function vWarranties(){
+  const importable = data.materials.filter(m => (m.status === "Installed" || m.status === "Delivered") && !data.warranties.some(w => w.materialId === m.id));
+  const imp = canWrite && importable.length ? `<button class="btn" data-importwarranty>Add ${importable.length} installed material${importable.length > 1 ? "s" : ""}</button>` : "";
+  if(!data.warranties.length) return head("warranties", imp) + empty("warranties", "No warranties yet", "As appliances, fixtures and finishes go in, save the manual, receipt and warranty here with the model and serial numbers. Paint colours and codes are worth noting too.", imp);
+  const t = todayISO();
+  const list = data.warranties.slice().sort((a, b) => (a.category || "").localeCompare(b.category || "") || (a.item || "").localeCompare(b.item || ""));
+  const unreg = list.filter(x => x.registered === "No").length;
+  return head("warranties", imp) + (unreg ? `<p class="banner">${unreg} item${unreg > 1 ? "s haven't" : " hasn't"} been registered with the manufacturer. Some warranties are shorter or void if you don't register.</p>` : "")
+    + `<div class="grid">${list.map(x => { const end = warrantyEnd(x); return `<div class="card" data-edit="warranties" data-id="${esc(x.id)}" tabindex="0" role="button">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${esc([x.category, x.room].filter(Boolean).join(" · "))}</span><h3>${esc(x.item)}</h3></div>${end ? (end < t ? badge("Expired", "bad") : badge("Until " + fmtShort(end) + " " + end.slice(0, 4), "good")) : ""}</div>
+      <div class="meta">${esc([x.brand, x.model && "Model " + x.model, x.serial && "Serial " + x.serial].filter(Boolean).join(" · "))}</div>
+      ${x.supplier ? `<div class="meta">${esc(x.supplier)}${x.purchaseDate ? ", " + fmtDate(x.purchaseDate) : ""}</div>` : ""}
+      ${x.notes ? `<p class="notes">${esc(x.notes)}</p>` : ""}${filesHTML(x.files)}</div>`; }).join("")}</div>`;
+}
+async function importWarranties(){
+  const items = data.materials.filter(m => (m.status === "Installed" || m.status === "Delivered") && !data.warranties.some(w => w.materialId === m.id));
+  if(!items.length) return;
+  const map = {"Appliances": "Appliance", "Plumbing fixtures": "Plumbing fixture", "Lighting & electrical": "Lighting & electrical", "Roofing": "Roofing", "Windows & doors": "Windows & doors", "Flooring": "Flooring", "Cabinetry": "Cabinetry & counters", "Countertops": "Cabinetry & counters", "Paint": "Paint & finishes"};
+  await insertMany("warranties", items.map(m => ({item: m.item, category: map[m.category] || "Other", room: m.room || "", brand: "", model: m.sku || "", serial: "", supplier: m.supplier || "", purchaseDate: "", warrantyYears: "", warrantyEnd: "", registered: "", notes: "", files: m.files || [], materialId: m.id, created: Date.now(), updated: Date.now()})));
+  toast(`${items.length} item${items.length > 1 ? "s" : ""} added. Open each one to add the model, serial number and warranty details.`);
+}
+
+// ---- Research ----
+function mdToHtml(src){
+  const lines = String(src || "").replace(/\r/g, "").split("\n");
+  let html = "", list = null, code = false, para = [], table = [];
+  const inline = t => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<i>$2</i>").replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  const fP = () => { if(para.length){ html += `<p>${para.map(inline).join("<br>")}</p>`; para = []; } };
+  const fL = () => { if(list){ html += `</${list}>`; list = null; } };
+  const fT = () => { if(table.length){ const rows = table.filter(r => !/^\s*\|?\s*:?-{2,}/.test(r)).map(r => r.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim())); html += `<div class="tablewrap" style="margin-bottom:10px"><table>${rows.map((r, i) => `<tr>${r.map(c => i ? `<td>${inline(c)}</td>` : `<th>${inline(c)}</th>`).join("")}</tr>`).join("")}</table></div>`; table = []; } };
+  for(const l of lines){
+    if(/^\s*```/.test(l)){ fP(); fL(); fT(); html += code ? "</code></pre>" : "<pre><code>"; code = !code; continue; }
+    if(code){ html += esc(l) + "\n"; continue; }
+    if(/^\s*\|.*\|\s*$/.test(l)){ fP(); fL(); table.push(l); continue; } else fT();
+    let m;
+    if((m = l.match(/^(#{1,4})\s+(.*)/))){ fP(); fL(); const n = Math.min(4, m[1].length + 1); html += `<h${n}>${inline(m[2])}</h${n}>`; continue; }
+    if((m = l.match(/^\s*[-*•]\s+(.*)/))){ fP(); if(list !== "ul"){ fL(); html += "<ul>"; list = "ul"; } html += `<li>${inline(m[1])}</li>`; continue; }
+    if((m = l.match(/^\s*\d+[.)]\s+(.*)/))){ fP(); if(list !== "ol"){ fL(); html += "<ol>"; list = "ol"; } html += `<li>${inline(m[1])}</li>`; continue; }
+    if(/^\s*(---+|\*\*\*+)\s*$/.test(l)){ fP(); fL(); html += "<hr>"; continue; }
+    if(!l.trim()){ fP(); fL(); continue; }
+    fL(); para.push(l);
+  }
+  fP(); fL(); fT(); if(code) html += "</code></pre>";
+  return html;
+}
+function vResearch(){
+  const how = `<details class="panel" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600">How to save a conversation with Claude</summary>
+    <p style="margin:10px 0 6px">There are two ways, and you can use both:</p>
+    <p style="margin:0 0 6px"><b>Save a link.</b> In the Claude conversation, use the share option to create a link, copy it, and paste it into "Link to the Claude conversation."</p>
+    <p style="margin:0">Or <b>save the text.</b> Use the copy button under any of Claude's answers and paste it into the conversation box. Tables, headings and lists are kept. Saving the text means it's here even if the link stops working.</p></details>`;
+  if(!data.research.length) return head("research") + how + empty("research", "No research saved yet", "Save comparisons and advice, like home automation systems, heat pumps or window options, along with your takeaways and what you decided.");
+  const topics = [...new Set(data.research.map(x => x.topic).filter(Boolean))].sort();
+  const list = data.research.filter(x => filters.research === "All" || x.topic === filters.research).sort((a, b) => (b.date || "").localeCompare(a.date || "") || num(b.created) - num(a.created));
+  return head("research") + how + `<div class="row" style="margin-bottom:12px"><input id="researchSearch" type="search" placeholder="Search research" aria-label="Search research" style="border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 12px;width:min(420px,100%)"></div>`
+    + (topics.length > 1 ? chips("research", topics) : "")
+    + `<div class="grid" id="researchList">${list.map(x => `<div class="card" data-read="${esc(x.id)}" tabindex="0" role="button" data-search="${esc(lc([x.title, x.topic, x.summary, x.decision, x.conversation].join(" ")))}">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><span class="meta">${esc([x.topic, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span>${x.link ? `<span aria-label="Has a link">🔗</span>` : ""}</div>
+      <h3>${esc(x.title)}</h3>
+      ${x.summary ? `<p class="notes" style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">${esc(x.summary)}</p>` : x.conversation ? `<p class="notes meta" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(x.conversation.slice(0, 400))}</p>` : ""}
+      ${x.decision ? `<p class="notes"><b>Decided:</b> ${esc(x.decision)}</p>` : ""}</div>`).join("")}</div><p class="meta" id="researchNone" hidden>No research matches that search.</p>`;
+}
+function openReader(id){
+  const x = data.research.find(r => r.id === id); if(!x) return;
+  const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
+  dlg.style.width = "min(860px,100%)";
+  dlg.innerHTML = `<div class="m-head"><div><span class="meta">${esc([x.topic, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span><h2>${esc(x.title)}</h2></div><button type="button" class="btn ghost" id="rdClose">Close</button></div>
+    <div style="padding:14px 18px">
+      ${x.link ? `<p style="margin:0 0 12px"><a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener">Open the conversation in Claude</a></p>` : ""}
+      ${x.summary ? `<div class="panel" style="margin-bottom:12px;background:var(--paper)"><b>Key takeaways</b><p class="notes" style="margin-top:4px">${esc(x.summary)}</p></div>` : ""}
+      ${x.decision ? `<p><b>Decided:</b> ${esc(x.decision)}</p>` : ""}
+      ${x.conversation ? `<div class="md">${mdToHtml(x.conversation)}</div>` : ""}
+      ${filesHTML(x.files)}
+    </div>
+    <div class="m-foot"><span></span><div class="row">${canWrite ? `<button class="btn" data-edit="research" data-id="${esc(x.id)}">Edit</button>` : ""}<button class="btn primary" id="rdDone">Done</button></div></div>`;
+  const close = () => dlg.close();
+  $("#rdClose").onclick = close; $("#rdDone").onclick = close;
+  dlg.addEventListener("close", () => { dlg.style.width = ""; }, {once: true});
+  dlg.showModal();
+}
+
+// ---- Contacts ----
+const lc = s => String(s || "").trim().toLowerCase();
+function contactFor(conv){
+  return data.contacts.find(k => k.id === conv.contactId) || data.contacts.find(k => lc(k.name) && lc(k.name) === lc(conv.person));
+}
+function convsFor(k){
+  return data.conversations.filter(c => c.contactId === k.id || (!c.contactId && lc(c.person) === lc(k.name))).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+}
+function companyOf(k){ return data.companies.find(c => c.id === k.companyId) || data.companies.find(c => lc(c.name) && lc(c.name) === lc(k.company)); }
+function companyName(k){ const c = companyOf(k); return c ? c.name : (k.company || ""); }
+const telHref = p => "tel:" + String(p).replace(/[^\d+]/g, "");
+const webHref = w => /^https?:/i.test(w) ? w : "https://" + w;
+function vContacts(){
+  const actions = canWrite ? `<button class="btn" data-add="companies">Add company</button><button class="btn" data-add="contacts">Add contact</button><button class="btn primary" data-paste>Paste contact info</button>` : "";
+  const header = `<div class="viewhead"><div><h2>Contacts</h2><p>${S.contacts.blurb}</p></div><div class="row">${actions}</div></div>`;
+  if(!data.contacts.length && !data.companies.length) return header + `<div class="empty"><h3>No contacts yet</h3><p>Copy someone's email signature, business card text or website contact details and paste it in. The name, company, phone, email and address are filled in for you to check.</p><div class="row">${canWrite ? `<button class="btn primary" data-paste>Paste contact info</button><button class="btn" data-add="contacts">Add contact</button>` : ""}</div></div>`;
+  const labels = [...new Set(data.contacts.map(k => k.label).filter(Boolean))].sort();
+  const shown = data.contacts.filter(k => filters.contacts === "All" || k.label === filters.contacts);
+  const groups = new Map();
+  const keyOf = k => { const c = companyOf(k); return c ? "id:" + c.id : (k.company ? "name:" + lc(k.company) : "none"); };
+  if(filters.contacts === "All") data.companies.forEach(c => groups.set("id:" + c.id, []));
+  shown.forEach(k => { const key = keyOf(k); if(!groups.has(key)) groups.set(key, []); groups.get(key).push(k); });
+  const keys = [...groups.keys()].sort((a, b) => a === "none" ? 1 : b === "none" ? -1 : groupTitle(a, groups.get(a)).localeCompare(groupTitle(b, groups.get(b))));
+  function groupTitle(key, ks){ if(key === "none") return "No company"; if(key.startsWith("id:")) return (data.companies.find(c => "id:" + c.id === key) || {}).name || ""; return ks[0].company; }
+  return header + (labels.length > 1 ? chips("contacts", labels) : "") + keys.map(key => {
+    const ks = groups.get(key).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const co = key.startsWith("id:") ? data.companies.find(c => "id:" + c.id === key) : null;
+    const coMeta = co ? [co.label, co.phone && `<a href="${esc(telHref(co.phone))}">${esc(co.phone)}</a>`, co.website && `<a href="${esc(webHref(co.website))}" target="_blank" rel="noopener">${esc(co.website.replace(/^https?:\/\//, ""))}</a>`].filter(Boolean).join(" · ") : "";
+    return `<div class="group"><h3>${co && canWrite ? `<button class="btn ghost" style="font:inherit;padding:0;color:var(--ink)" data-edit="companies" data-id="${esc(co.id)}">${esc(co.name)}</button>` : esc(groupTitle(key, ks))} <span class="meta" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px;font-weight:400">${coMeta}</span></h3>
+      ${ks.length ? `<div class="grid">${ks.map(contactCard).join("")}</div>` : `<p class="meta">No contacts at this company yet.</p>`}</div>`;
+  }).join("");
+}
+function contactCard(k){
+  const cv = convsFor(k);
+  const line = (icon, html) => `<div style="display:flex;gap:8px;align-items:baseline;font-size:15px;min-width:0"><span aria-hidden="true">${icon}</span><span style="overflow-wrap:anywhere">${html}</span></div>`;
+  return `<div class="panel" style="display:flex;flex-direction:column;gap:6px">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><h3 style="font-size:22px">${esc(k.name)}</h3>${badge(k.label)}</div>
+    ${k.title || companyName(k) ? `<div class="meta">${esc([k.title, companyName(k)].filter(Boolean).join(", "))}</div>` : ""}
+    ${k.phone ? line("📞", `<a href="${esc(telHref(k.phone))}">${esc(k.phone)}</a>`) : ""}
+    ${k.mobile ? line("📱", `<a href="${esc(telHref(k.mobile))}">${esc(k.mobile)}</a>`) : ""}
+    ${k.email ? line("✉️", `<a href="mailto:${esc(k.email)}">${esc(k.email)}</a>`) : ""}
+    ${k.website ? line("🔗", `<a href="${esc(webHref(k.website))}" target="_blank" rel="noopener">${esc(k.website.replace(/^https?:\/\//, ""))}</a>`) : ""}
+    ${k.address ? line("📍", esc(k.address)) : ""}
+    ${k.notes ? `<p class="notes meta">${esc(k.notes)}</p>` : ""}
+    <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">
+      <div class="meta">${cv.length ? `${cv.length} conversation${cv.length > 1 ? "s" : ""}, latest ${fmtDate(cv[0].date)}` : "No conversations yet"}</div>
+      ${cv.slice(0, 3).map(c => `<button class="btn ghost" style="display:block;text-align:left;padding:2px 0;color:var(--ink);font-size:15px" data-edit="conversations" data-id="${esc(c.id)}"><span class="meta">${fmtShort(c.date)}</span> ${esc(c.subject || c.method || "Conversation")}</button>`).join("")}
+    </div>
+    <div class="row" style="margin-top:auto;padding-top:6px">
+      ${canWrite ? `<button class="btn primary" data-logconv="${esc(k.id)}">Log conversation</button><button class="btn" data-edit="contacts" data-id="${esc(k.id)}">Edit</button>` : ""}
+      <button class="btn ghost" data-copy="${esc(k.id)}">Copy details</button>
+    </div></div>`;
+}
+
+const GENERIC_DOMAINS = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|proton|protonmail|rogers|bell|sympatico|shaw|telus|cogeco|videotron|comcast|verizon|att|sbcglobal|gmx|mail|zoho)$/i;
+const CO_WORDS = /\b(inc|ltd|llc|llp|corp|corporation|co\.|company|limited|construction|contracting|contractors?|builders?|building|homes|design|designs|interiors|architects?|architecture|engineering|engineers|group|studio|associates|partners|renovations?|plumbing|electric|electrical|mechanical|hvac|roofing|landscaping|supply|supplies|millwork|cabinetry|cabinets|kitchens|windows|doors|flooring|tile|masonry|excavation|surveying|consulting|consultants|enterprises|services|solutions)\b/i;
+const TITLE_WORDS = /\b(president|vice|owner|principal|manager|director|founder|co-founder|partner|architect|designer|engineer|estimator|coordinator|project|site|superintendent|foreman|supervisor|sales|associate|lead|senior|junior|consultant|specialist|technician|administrator|assistant|ceo|coo|cfo|vp|p\.?\s?eng|oaa|mraic|arido|bcin)\b/i;
+const ADDR_WORDS = /\b(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|cres|crescent|way|lane|ln|court|ct|crt|pl|place|pkwy|parkway|hwy|highway|terrace|trail|circle|sq|square|unit|suite|ste|po box)\b\.?/i;
+const POSTAL = /\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d\b|\b[A-Z]{2}\s+\d{5}(-\d{4})?\b/i;
+const PHONE = /(\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}(\s*(x|ext\.?|extension)\s*\d{1,5})?/i;
+const titleCase = s => s.replace(/\b\w/g, c => c.toUpperCase());
+
+function guessLabel(text){
+  const t = text.toLowerCase();
+  if(/architect|\boaa\b|mraic/.test(t)) return "Architect";
+  if(/engineer|p\.?\s?eng|structural/.test(t)) return "Engineer";
+  if(/interior|design|arido|decorat/.test(t)) return "Designer";
+  if(/inspector|inspection|city of|municipal|building department/.test(t)) return "Inspector";
+  if(/mortgage|bank|lender|lending|credit union|financ/.test(t)) return "Lender";
+  if(/general contractor|\bgc\b|construction|contracting|builder|renovation|homes\b|project manager|superintendent/.test(t)) return "General contractor";
+  if(/plumb|electric|hvac|heating|roofing|drywall|paint|floor|tile|landscap|excavat|framing|mason|concrete|insulation|millwork|cabinet|glass|siding|demolition|survey/.test(t)) return "Subcontractor";
+  if(/supply|supplies|supplier|lumber|showroom|distribut|depot|wholesale/.test(t)) return "Supplier";
+  return "";
+}
+
+function parseContact(text){
+  const out = {};
+  const raw = String(text || "").replace(/\r/g, "");
+  let lines = raw.split("\n")
+    .flatMap(l => l.split(/\s+[|•·]\s+|\s{3,}|\t+/))
+    .map(l => l.replace(/^[\s>*•\-–—]+/, "").trim())
+    .filter(l => l && !/^(sent from my|confidential|this e-?mail|please consider|--+$|_{3,})/i.test(l) && !/^((kind|best|warm)\s+)?(regards|thanks|thank you|best|cheers|sincerely)[,!.]?$/i.test(l));
+  const used = new Set();
+  const take = i => used.add(i);
+  // labelled lines like "Name: Jane"
+  lines.forEach((l, i) => {
+    const m = l.match(/^(name|company|organization|title|position|role|phone|tel|telephone|office|direct|mobile|cell|email|e-mail|web|website|address)\s*[:\-]\s*(.+)$/i);
+    if(!m) return;
+    const k = m[1].toLowerCase(), v = m[2].trim();
+    if(k === "name" && !out.name){ out.name = v; take(i); }
+    else if((k === "company" || k === "organization") && !out.company){ out.company = v; take(i); }
+    else if((k === "title" || k === "position" || k === "role") && !out.title){ out.title = v; take(i); }
+    else if((k === "address") && !out.address){ out.address = v; take(i); }
+  });
+  // email
+  const em = raw.match(/[\w.+\-]+@[\w\-]+(\.[\w\-]+)+/);
+  if(em){ out.email = em[0].toLowerCase(); lines.forEach((l, i) => { if(l.includes(em[0]) && l.replace(/^(e-?mail|email|e)\s*[:.]?\s*/i, "").replace(em[0], "").replace(/[<>()\[\]\s,;]/g, "") === "") take(i); }); }
+  // phones
+  lines.forEach((l, i) => {
+    if(used.has(i)) return;
+    const m = l.match(PHONE);
+    if(!m || l.replace(m[0], "").replace(/[^a-z]/gi, "").length > 14) return;
+    const isMobile = /\b(m|c|cell|mobile|mob)\b\s*[:.]?/i.test(l);
+    const isFax = /\bfax|\bf\s*[:.]/i.test(l);
+    if(isFax) { take(i); return; }
+    const num = m[0].trim();
+    if(isMobile && !out.mobile) out.mobile = num;
+    else if(!out.phone) out.phone = num;
+    else if(!out.mobile) out.mobile = num;
+    take(i);
+    // a second number on the same line
+    const rest = l.replace(m[0], ""); const m2 = rest.match(PHONE);
+    if(m2){ if(!out.mobile && out.phone !== m2[0].trim()) out.mobile = m2[0].trim(); }
+  });
+  // website
+  lines.forEach((l, i) => {
+    if(used.has(i) || out.website || l.includes("@")) return;
+    const m = l.match(/\b((https?:\/\/)?(www\.)?[a-z0-9\-]+(\.[a-z0-9\-]+)*\.(com|ca|net|org|co|io|design|studio|build|construction|homes|biz|us|info)(\/[^\s]*)?)\b/i);
+    if(m && l.replace(m[0], "").replace(/^(w|web|website|www)\s*[:.]?\s*/i, "").trim().length < 4){ out.website = m[1].replace(/\/$/, ""); take(i); }
+  });
+  // address (street line, optionally followed by city/postal line)
+  lines.forEach((l, i) => {
+    if(used.has(i) || out.address) return;
+    const street = /^\d+[a-z]?\s+\S/i.test(l) && ADDR_WORDS.test(l);
+    const postal = POSTAL.test(l);
+    if(street || postal || /^(unit|suite|ste\.?|po box)\s/i.test(l)){
+      let a = l; take(i);
+      const nx = lines[i + 1];
+      if(nx && !used.has(i + 1) && (POSTAL.test(nx) || /\b(ON|Ontario|QC|BC|AB|MB|SK|NS|NB|NL|PE)\b/.test(nx)) && !street === false){ a += ", " + nx; take(i + 1); }
+      out.address = a.replace(/^(a|address)\s*[:.]?\s*/i, "");
+    }
+  });
+  // name with optional credentials, e.g. "Sarah Chen, OAA" or "Dave Patel P.Eng."
+  const CRED = /[,\s]+((OAA|MRAIC|FRAIC|P\.?\s?Eng\.?|PMP|ARIDO|BCIN|LEED\s?AP|CPA|CET|PE|AIA|RA|MBA|B\.?\s?Arch|M\.?\s?Arch|Ph\.?D)\.?[,\s]*)+$/i;
+  lines.forEach((l, i) => {
+    if(used.has(i) || out.name) return;
+    const cm = l.match(CRED);
+    const base = (cm ? l.slice(0, cm.index) : l).replace(/^(regards|thanks|thank you|best|cheers|sincerely)[,!]?\s*/i, "").trim();
+    if(/^[A-ZÀ-Ý][a-zà-ÿ'’\-]+(\s+[A-ZÀ-Ý][A-Za-zà-ÿ'’.\-]*){1,3}$/.test(base) && !TITLE_WORDS.test(base) && !CO_WORDS.test(base)){
+      out.name = base; take(i);
+      if(cm && !out.credentials) out.credentials = cm[0].replace(/^[,\s]+/, "").trim();
+    }
+  });
+  // title and company lines, possibly "Title at Company" or "Title, Company"
+  lines.forEach((l, i) => {
+    if(used.has(i)) return;
+    const at = l.match(/^(.+?)\s+(?:at|@|with|-|–|—|,)\s+(.+)$/i);
+    if(at && TITLE_WORDS.test(at[1]) && !out.title){ out.title = at[1].trim(); if(!out.company) out.company = at[2].trim(); take(i); return; }
+    if(CO_WORDS.test(l) && !out.company && !TITLE_WORDS.test(l.replace(CO_WORDS, ""))){ out.company = l; take(i); return; }
+    if(TITLE_WORDS.test(l) && !out.title && l.split(/\s+/).length <= 7){ out.title = l; take(i); return; }
+  });
+  // name: first remaining short line that looks like a person's name
+  lines.forEach((l, i) => {
+    if(used.has(i) || out.name) return;
+    const clean = l.replace(/[,;]+$/, "").replace(/^(regards|thanks|thank you|best|cheers|sincerely)[,!]?\s*/i, "");
+    if(!clean) { take(i); return; }
+    if(/^[A-Za-zÀ-ÿ'’.\-]+(\s+[A-Za-zÀ-ÿ'’.\-]+){0,3}(,\s*[A-Z.\s]{2,12})?$/.test(clean) && !/\d/.test(clean) && !CO_WORDS.test(clean)){
+      out.name = clean.replace(/,\s*[A-Z.\s]{2,12}$/, m => { if(!out.title) out.title = m.replace(/^,\s*/, ""); return ""; }).trim();
+      take(i);
+    }
+  });
+  if(out.name && out.name === out.name.toLowerCase()) out.name = titleCase(out.name);
+  // company from email domain if still missing
+  if(!out.company && out.email){
+    const base = out.email.split("@")[1].split(".")[0];
+    if(!GENERIC_DOMAINS.test(base)) out.company = titleCase(base.replace(/[-_]+/g, " "));
+  }
+  if(!out.website && out.email){
+    const dom = out.email.split("@")[1];
+    if(!GENERIC_DOMAINS.test(dom.split(".")[0])) out.website = dom;
+  }
+  if(out.credentials){ out.title = out.title ? out.title + ", " + out.credentials : out.credentials; delete out.credentials; }
+  out.label = guessLabel([out.title, out.company, out.website, raw].join(" "));
+  const leftover = lines.filter((l, i) => !used.has(i) && l !== out.name).join("\n");
+  if(leftover) out.notes = leftover;
+  return out;
+}
+
+function openPaste(){
+  const dlg = $("#dlg");
+  dlg.innerHTML = `<form id="pasteForm" method="dialog">
+    <div class="m-head"><h2>Paste contact info</h2><button type="button" class="btn ghost" id="pClose">Close</button></div>
+    <div class="m-body"><div class="f"><label for="pasteText">Email signature, business card text or website contact details</label>
+      <textarea id="pasteText" style="min-height:200px" placeholder="Jane Doe&#10;Project Manager&#10;Acme Construction Ltd.&#10;416-555-0123&#10;jane@acmeconstruction.ca"></textarea>
+      <span class="meta" style="font-size:13px">You'll be able to check and fix every field before it's saved. A company is created for them if it isn't already in your list.</span></div></div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="pCancel">Cancel</button><button type="submit" class="btn primary">Fill in contact</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#pClose").onclick = close; $("#pCancel").onclick = close;
+  $("#pasteForm").onsubmit = e => {
+    e.preventDefault();
+    const txt = $("#pasteText").value;
+    if(!txt.trim()) return;
+    const parsed = parseContact(txt);
+    dlg.close();
+    openForm("contacts", null, {...parsed, __fromPaste: true});
+  };
+  dlg.showModal();
+  setTimeout(() => $("#pasteText").focus(), 50);
+}
+
+async function linkCompany(body){
+  const name = String(body.company || "").trim();
+  if(!name){ body.companyId = ""; return body; }
+  const existing = data.companies.find(c => lc(c.name) === lc(name));
+  if(existing){ body.companyId = existing.id; body.company = existing.name; return body; }
+  body.companyId = await insertOne("companies", {name, label: body.label || "", phone: "", email: "", website: body.website || "", address: body.address || "", notes: "", files: [], created: Date.now(), updated: Date.now()});
+  return body;
 }
 
 // ---------- form ----------
@@ -655,9 +1723,10 @@ function datalists(){
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort();
   const lists = {
     trades: uniq([...TRADES, ...data.quotes.map(q => q.trade), ...data.budget.map(b => b.category)]),
-    people: uniq(data.conversations.map(c => c.person)),
+    people: uniq([...data.contacts.map(k => k.name), ...data.conversations.map(c => c.person)]),
+    companies: uniq(data.companies.map(c => c.name)),
     sheets: uniq(data.plans.map(p => p.sheet)),
-    rooms: uniq(data.materials.map(m => m.room))
+    rooms: uniq([...data.materials, ...data.photos, ...data.punch, ...data.selections, ...data.warranties].map(m => m.room))
   };
   return Object.entries(lists).map(([k, v]) => `<datalist id="dl-${k}">${v.map(o => `<option value="${esc(o)}">`).join("")}</datalist>`).join("");
 }
@@ -665,6 +1734,7 @@ function datalists(){
 function openForm(col, rec, preset){
   const sch = col === "project" ? PROJECT : S[col];
   const r = rec ? {...rec} : {...(preset || {})};
+  if($("#dlg").open){ $("#dlg").onclose = null; $("#dlg").close(); }
   let files = (r.files || []).slice();
   const original = (r.files || []).slice();
   const newUploads = []; let saved = false;
@@ -678,7 +1748,8 @@ function openForm(col, rec, preset){
         ${canWrite ? `<input type="file" id="fileInput" multiple aria-label="${f.l}"><span class="meta" style="font-size:13px">Any file type up to ${MAX_MB} MB each: PDFs, photos, Word, Excel, CAD.</span><span class="uploading" id="upState"></span>` : ""}</div>`;
     }
     const dis = canWrite ? "" : "disabled";
-    if(f.t === "textarea") return `<div class="${cls}"><label for="${id}">${f.l}</label><textarea id="${id}" name="${f.k}" ${dis}>${esc(v)}</textarea></div>`;
+    if(f.t === "textarea") return `<div class="${cls}"><label for="${id}">${f.l}</label><textarea id="${id}" name="${f.k}" ${dis} ${f.big ? 'style="min-height:280px;font-size:15px"' : ""} placeholder="${esc(f.ph || "")}">${esc(v)}</textarea></div>`;
+    if(f.t === "ref"){ const opts = f.src(); const val = v || (f.def ? f.def(r) : ""); return `<div class="${cls}"><label for="${id}">${f.l}</label><select id="${id}" name="${f.k}" ${dis}><option value="">${opts.length ? "Not assigned" : "Add budget lines first"}</option>${opts.map(([ov, ol]) => `<option value="${esc(ov)}" ${ov === val ? "selected" : ""}>${esc(ol)}</option>`).join("")}</select></div>`; }
     if(f.t === "select") return `<div class="${cls}"><label for="${id}">${f.l}</label><select id="${id}" name="${f.k}" ${dis}><option value=""></option>${f.o.map(o => `<option ${o === v ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></div>`;
     const type = f.t === "money" || f.t === "number" ? "number" : f.t === "url" ? "url" : f.t === "date" ? "date" : "text";
     const extra = (f.t === "money" ? 'step="0.01" inputmode="decimal"' : f.t === "number" ? `step="any" inputmode="decimal" ${f.min != null ? `min="${f.min}"` : ""} ${f.max != null ? `max="${f.max}"` : ""}` : "") + (f.list ? ` list="dl-${f.list}"` : "");
@@ -686,7 +1757,7 @@ function openForm(col, rec, preset){
   };
   dlg.innerHTML = `<form method="dialog" id="frm" novalidate>
     <div class="m-head"><h2>${rec ? (canWrite ? "Edit " : "") + sch.one : "New " + sch.one}</h2><button type="button" class="btn ghost" id="xBtn" aria-label="Close">Close</button></div>
-    <div class="m-body">${sch.fields.map(fieldHTML).join("")}<p class="err f" id="formErr" hidden></p></div>
+    <div class="m-body">${preset && preset.__fromPaste ? `<p class="banner f" style="margin:0">Check these details. They were filled in from what you pasted, and anything left over is in Notes.</p>` : ""}${sch.fields.map(fieldHTML).join("")}<p class="err f" id="formErr" hidden></p></div>
     ${canWrite ? `<div class="m-foot">${rec && col !== "project" ? `<button type="button" class="btn danger" id="delBtn">Delete</button>` : "<span></span>"}<div class="row"><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="submit" class="btn primary" id="saveBtn">Save ${sch.one}</button></div></div>` : ""}
   </form>${datalists()}`;
   const renderFiles = () => {
@@ -706,12 +1777,7 @@ function openForm(col, rec, preset){
       if(file.size > MAX_MB * 1024 * 1024){ st.textContent = `${file.name} is over ${MAX_MB} MB. Compress it or split it into parts.`; continue; }
       uploading++; st.textContent = `Uploading ${file.name}…`;
       try {
-        const path = `${crypto.randomUUID()}/${file.name.replace(/[^\w.\-]+/g, "_")}`;
-        const {error} = await sb.storage.from(BUCKET).upload(path, file, {contentType: file.type || "application/octet-stream"});
-        if(error) throw error;
-        const {data: su} = await sb.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 6);
-        if(su && su.signedUrl) urlCache[path] = su.signedUrl;
-        const rec2 = {path, name: file.name, type: file.type || "", size: file.size};
+        const rec2 = await uploadToStorage(file);
         files.push(rec2); newUploads.push(rec2);
         renderFiles(); st.textContent = "";
       } catch(e){
@@ -730,6 +1796,7 @@ function openForm(col, rec, preset){
     const err = $("#formErr");
     if(uploading){ err.hidden = false; err.textContent = "Wait for uploads to finish before saving."; return; }
     const body = {};
+    Object.keys(r).forEach(k => { if(k !== "id" && !k.startsWith("__")) body[k] = r[k]; });
     for(const f of sch.fields){
       if(f.t === "files"){ body.files = files; continue; }
       const el = dlg.querySelector(`[name="${f.k}"]`);
@@ -738,12 +1805,23 @@ function openForm(col, rec, preset){
       if(f.t === "money" || f.t === "number") v = v === "" ? "" : +v;
       body[f.k] = v;
     }
+    if(col === "invoices"){
+      body.needsReview = false;
+      if(body.holdback === "" && !rec && HOLDBACK_CATS.includes(body.category)) body.holdback = defaultHoldback(body);
+      if(body.status === "Paid" && !body.paidDate) body.paidDate = todayISO();
+    }
+    if(col === "conversations"){
+      const k = data.contacts.find(x => lc(x.name) === lc(body.person));
+      body.contactId = k ? k.id : "";
+      if(k && !body.role) body.role = k.label || "";
+    }
     if(col === "tasks" && body.end < body.start){ err.hidden = false; err.textContent = "Finish date must be on or after the start date."; return; }
     if(col === "tasks" && body.progress !== "") body.progress = Math.max(0, Math.min(100, body.progress));
     body.updated = Date.now();
     body.created = r.created || Date.now();
     const btn = $("#saveBtn"); btn.disabled = true; btn.textContent = "Saving…";
     try {
+      if(col === "contacts") await linkCompany(body);
       await save(col, rec && rec.id, body); saved = true;
       const keep = new Set(files.map(f => f.path));
       removeFiles(original.filter(f => !keep.has(f.path))).catch(() => {});
@@ -757,6 +1835,18 @@ function openForm(col, rec, preset){
 
 // ---------- starters ----------
 async function starter(kind){
+  if(kind === "permits"){
+    const rows = [["Building permit","Building permit","Applied for through the City's building department."],
+      ["Excavation & footings","Inspection",""],["Foundation & damp-proofing (before backfill)","Inspection",""],["Underground plumbing & drains","Inspection",""],
+      ["Framing","Inspection",""],["Plumbing rough-in","Inspection",""],["HVAC rough-in","Inspection",""],
+      ["Electrical rough-in (ESA)","Inspection","Electrical inspections are booked with the Electrical Safety Authority (ESA), usually by your licensed electrician, not with the City."],
+      ["Insulation & vapour barrier","Inspection",""],["Fire separations (if required)","Inspection",""],
+      ["Final plumbing","Inspection",""],["Final HVAC","Inspection",""],["Electrical final (ESA)","Inspection",""],["Final building inspection / occupancy","Inspection",""]];
+    if(!confirm(`Add ${rows.length} typical items for an addition in Ontario? Your permit lists the inspections actually required, so edit or delete any that don't apply.`)) return;
+    await insertMany("permits", rows.map(([name, type, notes], i) => ({name, type, notes, status: "Not started", permitNumber: "", inspector: "", date: "", resultDate: "", files: [], seq: i, created: Date.now() + i, updated: Date.now()})));
+    toast("Inspections added. Tap one to book it or record the result.");
+    return;
+  }
   if(kind === "tasks"){
     const seq = [["Design & drawings","Design",42],["Structural engineering","Design",21,-14],["Permit review","Permits",42],["Demolition","Site work",7],["Excavation & foundation","Structure",21],["Framing","Structure",28],["Roofing, windows & doors","Envelope",14],["Rough plumbing, electrical & HVAC","Rough-ins",21],["Rough inspections","Inspections",5],["Insulation & drywall","Finishes",21],["Flooring & tile","Finishes",21],["Cabinets & countertops","Finishes",14],["Paint & trim","Finishes",14],["Fixtures & appliances","Finishes",10],["Final inspection & punch list","Closeout",10]];
     let cur = project.start || todayISO();
@@ -779,16 +1869,54 @@ async function starter(kind){
 document.addEventListener("click", e => {
   if(e.target.closest("[data-stop]")) return;
   const v = e.target.closest("[data-view]");
-  if(v){ view = v.dataset.view; render(); window.scrollTo(0, 0); return; }
+  if(v){ view = v.dataset.view; compareTrade = null; render(); window.scrollTo(0, 0); return; }
+  const cmpB = e.target.closest("[data-compare]");
+  if(cmpB){ compareTrade = cmpB.dataset.compare || null; render(); window.scrollTo(0, 0); return; }
+  const acc = e.target.closest("[data-accept]");
+  if(acc){ acceptQuote(acc.dataset.accept).catch(() => toast("Couldn't save. Try again.")); return; }
+  if(e.target.closest("[data-print]")){ window.print(); return; }
   const a = e.target.closest("[data-add]");
   if(a){
     const col = a.dataset.add, preset = {};
     if(col === "tasks"){ preset.start = todayISO(); preset.end = addDays(todayISO(), 6); preset.progress = 0; }
     if(col === "conversations" || col === "quotes" || col === "plans" || col === "changeOrders") preset.date = todayISO();
     if(col === "changeOrders"){ preset.number = "CO-" + String(data.changeOrders.length + 1).padStart(3, "0"); preset.status = "Pending"; }
-    if(col === "quotes") preset.status = "Received";
+    if(col === "quotes"){ preset.status = "Received"; if(a.dataset.trade) preset.trade = a.dataset.trade; }
+    if(col === "invoices"){ preset.status = "Unpaid"; preset.date = todayISO(); }
+    if(col === "permits"){ preset.type = "Inspection"; preset.status = "Not started"; }
+    if(col === "selections") preset.status = "To decide";
+    if(col === "punch"){ preset.status = "Open"; preset.priority = "Normal"; preset.found = todayISO(); }
+    if(col === "research") preset.date = todayISO();
+    if(col === "photos"){ openPhotoUpload(); return; }
     if(col === "materials") preset.status = "Specified";
     openForm(col, null, preset); return;
+  }
+  if(e.target.closest("[data-paste]")){ openPaste(); return; }
+  if(e.target.closest("[data-export]")){ exportInvoices(); return; }
+  if(e.target.closest("[data-photoupload]")){ openPhotoUpload(); return; }
+  if(e.target.closest("[data-importwarranty]")){ importWarranties().catch(() => toast("Couldn't add them. Try again.")); return; }
+  const tm = e.target.closest("[data-tomaterial]");
+  if(tm){ selectionToMaterial(tm.dataset.tomaterial).catch(() => toast("Couldn't add it. Try again.")); return; }
+  const ad = e.target.closest("[data-adddoc]");
+  if(ad){ openForm("documents", null, {company: ad.dataset.adddoc, docType: ad.dataset.doctype || ""}); return; }
+  const rd = e.target.closest("[data-read]");
+  if(rd && !e.target.closest("a")){ openReader(rd.dataset.read); return; }
+  const hs = e.target.closest("[data-hbset]");
+  if(hs){ const v = hs.dataset.hbset, rec = data.holdbacks.find(h => lc(h.vendor) === lc(v)); openForm("holdbacks", rec || null, {vendor: v, completionDate: todayISO()}); return; }
+  const hr = e.target.closest("[data-hbrelease]");
+  if(hr){ openRelease(hr.dataset.hbrelease); return; }
+  const mp = e.target.closest("[data-markpaid]");
+  if(mp){ const x = data.invoices.find(i => i.id === mp.dataset.markpaid); if(x) openMarkPaid(x); return; }
+  const lg = e.target.closest("[data-logconv]");
+  if(lg){ const k = data.contacts.find(x => x.id === lg.dataset.logconv); if(k) openForm("conversations", null, {date: todayISO(), person: k.name, role: k.label || "", method: "Phone call"}); return; }
+  const cp = e.target.closest("[data-copy]");
+  if(cp){
+    const k = data.contacts.find(x => x.id === cp.dataset.copy);
+    if(k){
+      const txt = [k.name, [k.title, companyName(k)].filter(Boolean).join(", "), k.phone && "Phone: " + k.phone, k.mobile && "Mobile: " + k.mobile, k.email, k.website, k.address].filter(Boolean).join("\n");
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast("Contact details copied."), () => toast("Couldn't copy. Select the text and copy it instead."));
+    }
+    return;
   }
   const r = e.target.closest("[data-addrev]");
   if(r){ openForm("plans", null, {sheet: r.dataset.addrev, discipline: r.dataset.disc, date: todayISO(), status: "For review"}); return; }
@@ -799,6 +1927,15 @@ document.addEventListener("click", e => {
   if(st){ starter(st.dataset.starter).catch(() => toast("Couldn't add everything. Try again.")); return; }
   const f = e.target.closest("[data-filter]");
   if(f){ filters[f.dataset.filter] = f.dataset.val; render(); }
+});
+document.addEventListener("input", e => {
+  if(e.target.id !== "researchSearch") return;
+  const q = lc(e.target.value); let shown = 0;
+  document.querySelectorAll("#researchList [data-search]").forEach(c => { const ok = !q || c.dataset.search.includes(q); c.hidden = !ok; if(ok) shown++; });
+  const none = $("#researchNone"); if(none) none.hidden = shown > 0;
+});
+document.addEventListener("change", e => {
+  if(e.target.id === "invUpload"){ const fl = e.target.files; handleInvoiceUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); }
 });
 document.addEventListener("submit", async e => {
   if(e.target.id !== "authForm") return;
