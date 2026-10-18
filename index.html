@@ -254,6 +254,7 @@ tr.needs td:first-child{box-shadow:inset 4px 0 0 var(--accent)}
 <dialog id="dlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
 (function(){
 "use strict";
@@ -486,8 +487,10 @@ const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","in
 const VIEWS = NAV.flat();
 
 // ---------- Supabase settings: paste your project's values here ----------
-const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-const SUPABASE_KEY = "YOUR-ANON-OR-PUBLISHABLE-KEY";
+// Your project URL and key live in config.js, next to this file, so updates to index.html never touch them.
+const CFG = window.PORTAL_CONFIG || {};
+const SUPABASE_URL = String(CFG.supabaseUrl || "https://YOUR-PROJECT-REF.supabase.co").trim().replace(/\/+$/, "");
+const SUPABASE_KEY = String(CFG.supabaseKey || "YOUR-ANON-OR-PUBLISHABLE-KEY").trim();
 const BUCKET = "portal-files";
 const MAX_MB = 50;
 const PORTAL_NAME = "98 Woodlawn Renovation";
@@ -597,7 +600,7 @@ async function init(){
 }
 
 function authScreen(){
-  if(!configured) return `<div class="auth"><h1>Almost there</h1><p>Open <b>index.html</b> and paste your Supabase project URL and key into the two lines near the top marked "Supabase settings."</p></div>`;
+  if(!configured) return `<div class="auth"><h1>Almost there</h1><p>This page needs a <b>config.js</b> file next to it in your GitHub repository, containing your Supabase project URL and key. ${window.PORTAL_CONFIG ? "config.js was found, but it still has the placeholder values. Edit it and paste in your own." : "config.js wasn't found. Check it's uploaded to the same place as index.html and named exactly config.js, all lowercase."}</p></div>`;
   if(connecting) return `<div class="auth"><p class="meta">Loading…</p></div>`;
   if(!session) return `<div class="auth"><h1>${PORTAL_NAME}</h1>${ORNAMENT}<p class="meta">Only people on this portal's member list can see the project.</p>
     <form id="authForm">
