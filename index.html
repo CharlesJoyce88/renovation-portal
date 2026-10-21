@@ -190,6 +190,13 @@ header.top{background:var(--header);border-bottom:3px double var(--accent)}
 .brand b{color:var(--header-ink)}
 .brand span{color:var(--header-muted);font-style:italic}
 #signOut{color:var(--header-ink);white-space:nowrap}
+nav.tabs{flex-wrap:wrap;overflow:visible;row-gap:0}
+#navSelect{display:none}
+@media (max-width:760px){
+  nav.tabs{display:none!important}
+  #navSelect{display:block;width:100%;margin:8px 0 10px;padding:9px 12px;border-radius:3px;border:1px solid var(--accent);background:var(--green);color:var(--header-ink);font:16px "Libre Caslon Text",Georgia,serif;font-variant:small-caps;letter-spacing:.05em}
+  #navSelect[hidden]{display:none}
+}
 @media (max-width:560px){.brand span{display:none}}
 nav.tabs button{color:var(--header-muted);font-variant:small-caps;letter-spacing:.06em;font-size:16px;padding:9px 9px 10px}
 nav.tabs button[aria-current="page"]{color:var(--header-ink);border-bottom-color:var(--accent)}
@@ -248,6 +255,7 @@ tr.needs td:first-child{box-shadow:inset 4px 0 0 var(--accent)}
   <div class="top-inner">
     <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><div class="brand"><b id="brandName">98 Woodlawn Renovation</b><span id="brandSub"></span></div><button class="btn ghost" id="signOut" hidden>Sign out</button></div>
     <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+    <select id="navSelect" aria-label="Go to section"></select>
   </div>
 </header>
 <main id="main"></main>
@@ -279,7 +287,8 @@ const PHASES = ["Design","Permits","Site work","Structure","Envelope","Rough-ins
 const PHASE_COLORS = ["#7E9474","#963A2D","#B98A3E","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
 const phaseColor = p => PHASE_COLORS[Math.max(0, PHASES.indexOf(p)) % PHASE_COLORS.length];
 
-const LABELS = ["General contractor","Designer","Architect","Engineer","Subcontractor","Supplier","Inspector","Lender","Other"];
+const RESEARCH_TOPICS = ["Home automation","Door hardware","Lighting","Heating & cooling","Windows & doors","Insulation & energy","Kitchen","Bathroom","Flooring","Tile","Appliances","Paint & finishes","Millwork & trim","Heritage & period details","Roofing","Exterior & landscaping","Structure & engineering","Permits & regulations","Costs & financing"];
+const LABELS = ["General contractor","Designer","Architect","Engineer","Surveyor","Subcontractor","Supplier","Inspector","Lender","Other"];
 const PAY_METHODS = ["Credit card","Debit card","E-transfer","Cheque","Cash","Bank transfer / wire","Line of credit / financing","Other"];
 const S = {
   quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade. Open Compare on any trade to see its quotes side by side.", fields:[
@@ -321,7 +330,7 @@ const S = {
     {k:"files",l:"Attachments (emails, sketches, photos)",t:"files"}]},
   invoices:{title:"Expenses", one:"invoice", blurb:"Every invoice you receive, totalled by category and month. Upload PDFs and the details are read for you to check.", fields:[
     {k:"vendor",l:"Vendor",t:"text",req:1,half:1,list:"companies"},
-    {k:"category",l:"Category",t:"select",o:["Architect","Designer","Engineer","General contractor","Subcontractor","Materials & supplies","Permits & inspections","Financing","Other"],half:1},
+    {k:"category",l:"Category",t:"select",o:["Architect","Designer","Engineer","Surveyor","General contractor","Subcontractor","Materials & supplies","Permits & inspections","Financing","Other"],half:1},
     {k:"invoiceNumber",l:"Invoice number",t:"text",half:1},
     {k:"budgetLineId",l:"Budget line",t:"ref",half:1,src:() => data.budget.slice().sort((a, b) => (a.category || "").localeCompare(b.category || "")).map(b => [b.id, b.category + (b.item ? " — " + b.item : "")]), def: r => { const b = r.budgetLine && data.budget.find(b => lc(b.category) === lc(r.budgetLine)); return b ? b.id : ""; }},
     {k:"date",l:"Invoice date",t:"date",half:1},
@@ -399,15 +408,16 @@ const S = {
     {k:"registered",l:"Registered with manufacturer?",t:"select",o:["Yes","No"],half:1},
     {k:"notes",l:"Notes (paint codes, filter sizes, care instructions)",t:"textarea"},
     {k:"files",l:"Manual, receipt, warranty card",t:"files"}]},
-  research:{title:"Research", one:"research note", blurb:"Conversations with Claude and other research, saved with your takeaways and what you decided.", fields:[
-    {k:"title",l:"Title",t:"text",req:1,ph:"e.g. Home automation comparison"},
-    {k:"topic",l:"Topic",t:"select",o:["Home automation","Heating & cooling","Windows & doors","Insulation & energy","Kitchen & bath","Finishes & materials","Appliances","Structure & engineering","Permits & regulations","Costs & financing","Other"],half:1},
+  research:{title:"Research", one:"research note", blurb:"Everything you've looked into, sorted by category: product comparisons, showroom visits, articles and conversations with Claude.", fields:[
+    {k:"title",l:"Title",t:"text",req:1,ph:"e.g. Smart lock options for the front door"},
+    {k:"topic",l:"Category (pick one or type a new one)",t:"text",list:"researchTopics",half:1,ph:"e.g. Door hardware"},
+    {k:"source",l:"Source",t:"select",o:["Claude conversation","Website or article","Showroom or store visit","Supplier or contractor","Video","Book or magazine","Friend or neighbour","Other"],half:1},
     {k:"date",l:"Date",t:"date",half:1},
-    {k:"link",l:"Link to the Claude conversation (optional)",t:"url",ph:"https://claude.ai/share/…"},
+    {k:"link",l:"Link (website, product page or Claude share link)",t:"url",half:1,ph:"https://…"},
     {k:"summary",l:"Key takeaways",t:"textarea"},
     {k:"decision",l:"What you decided",t:"text"},
-    {k:"conversation",l:"Conversation or notes (paste here; Markdown formatting is kept)",t:"textarea",big:1},
-    {k:"files",l:"Attachments",t:"files"}]},
+    {k:"conversation",l:"Notes, options and prices, or a pasted conversation (Markdown formatting is kept)",t:"textarea",big:1},
+    {k:"files",l:"Photos, spec sheets, PDFs",t:"files"}]},
   holdbacks:{title:"Holdbacks", one:"finish date", blurb:"", fields:[
     {k:"vendor",l:"Contractor",t:"text",req:1},
     {k:"completionDate",l:"Date their work was finished",t:"date",req:1,half:1},
@@ -483,6 +493,7 @@ const PROJECT = {title:"Project", one:"project details", fields:[
   {k:"end",l:"Target completion",t:"date",half:1},
   {k:"notes",l:"Scope summary",t:"textarea"}]};
 const COLS = Object.keys(S);
+const NAV_NAMES = ["", "Planning", "Money", "The build", "People", "Reference"];
 const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["contacts","conversations","documents"],["research","warranties"]];
 const VIEWS = NAV.flat();
 
@@ -625,10 +636,11 @@ function render(){
     const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : v === "punch" && counts.punch ? `<span class="count">${counts.punch} open</span>` : "";
     return `<button data-view="${v}" ${v === view ? 'aria-current="page"' : ""}>${label}${c}</button>`;
   }).join("")).join('<span class="tabsep" aria-hidden="true"></span>');
+  $("#navSelect").innerHTML = NAV.map((g, i) => { const opts = g.map(v => { const label = v === "overview" ? "Overview" : S[v].title; const c = v === "changeOrders" && counts.changeOrders ? ` (${counts.changeOrders} pending)` : v === "punch" && counts.punch ? ` (${counts.punch} open)` : ""; return `<option value="${v}" ${v === view ? "selected" : ""}>${label}${c}</option>`; }).join(""); return NAV_NAMES[i] ? `<optgroup label="${NAV_NAMES[i]}">${opts}</optgroup>` : opts; }).join("");
   const m = $("#main");
   $("#signOut").hidden = !session;
   const gate = authScreen();
-  $("#tabs").hidden = !!gate;
+  $("#tabs").hidden = !!gate; $("#navSelect").hidden = !!gate;
   if(gate){ m.innerHTML = gate; return; }
   let banner = "";
   const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, contacts:vContacts, conversations:vConversations}[view];
@@ -961,8 +973,8 @@ function vConversations(){
 
 // ---- Expenses / invoices ----
 const INV_CATS = S.invoices.fields.find(f => f.k === "category").o;
-const LABEL_TO_CAT = {"General contractor":"General contractor","Designer":"Designer","Architect":"Architect","Engineer":"Engineer","Subcontractor":"Subcontractor","Supplier":"Materials & supplies","Inspector":"Permits & inspections","Lender":"Financing","Other":"Other"};
-const CAT_COLORS = ["#7E9474","#963A2D","#B98A3E","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
+const LABEL_TO_CAT = {"General contractor":"General contractor","Designer":"Designer","Architect":"Architect","Engineer":"Engineer","Surveyor":"Surveyor","Subcontractor":"Subcontractor","Supplier":"Materials & supplies","Inspector":"Permits & inspections","Lender":"Financing","Other":"Other"};
+const CAT_COLORS = ["#7E9474","#963A2D","#B98A3E","#8A6A4F","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
 const catColor = c => CAT_COLORS[Math.max(0, INV_CATS.indexOf(c)) % CAT_COLORS.length];
 const kfmt = n => n >= 1000 ? "$" + (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : "$" + Math.round(n);
 function invHeld(x){ return x.status === "Paid" ? 0 : Math.min(num(x.holdback), num(x.total)); }
@@ -970,7 +982,7 @@ function invPaid(x){ return x.status === "Paid" ? num(x.total) : x.status === "H
 function invOwing(x){ return Math.max(0, num(x.total) - invHeld(x) - invPaid(x)); }
 function lineFor(x){ return data.budget.find(b => b.id === x.budgetLineId) || (!x.budgetLineId && x.budgetLine ? data.budget.find(b => lc(b.category) === lc(x.budgetLine)) : null); }
 function lineName(b){ return b ? b.category + (b.item ? " — " + b.item : "") : ""; }
-const CAT_LINE_WORDS = {"Architect":["architect","design"],"Designer":["design","interior"],"Engineer":["engineer"],"Permits & inspections":["permit"],"General contractor":["general","contract","construction"],"Materials & supplies":["material"],"Financing":["financ","interest"]};
+const CAT_LINE_WORDS = {"Surveyor":["survey"],"Architect":["architect","design"],"Designer":["design","interior"],"Engineer":["engineer"],"Permits & inspections":["permit"],"General contractor":["general","contract","construction"],"Materials & supplies":["material"],"Financing":["financ","interest"]};
 function guessBudgetLine(inv){
   const v = lc(inv.vendor);
   let b = v && data.budget.find(b => lc(b.vendor) && (lc(b.vendor) === v || v.includes(lc(b.vendor)) || lc(b.vendor).includes(v)));
@@ -1477,28 +1489,32 @@ function mdToHtml(src){
   return html;
 }
 function vResearch(){
-  const how = `<details class="panel" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600">How to save a conversation with Claude</summary>
-    <p style="margin:10px 0 6px">There are two ways, and you can use both:</p>
-    <p style="margin:0 0 6px"><b>Save a link.</b> In the Claude conversation, use the share option to create a link, copy it, and paste it into "Link to the Claude conversation."</p>
-    <p style="margin:0">Or <b>save the text.</b> Use the copy button under any of Claude's answers and paste it into the conversation box. Tables, headings and lists are kept. Saving the text means it's here even if the link stops working.</p></details>`;
-  if(!data.research.length) return head("research") + how + empty("research", "No research saved yet", "Save comparisons and advice, like home automation systems, heat pumps or window options, along with your takeaways and what you decided.");
-  const topics = [...new Set(data.research.map(x => x.topic).filter(Boolean))].sort();
-  const list = data.research.filter(x => filters.research === "All" || x.topic === filters.research).sort((a, b) => (b.date || "").localeCompare(a.date || "") || num(b.created) - num(a.created));
-  return head("research") + how + `<div class="row" style="margin-bottom:12px"><input id="researchSearch" type="search" placeholder="Search research" aria-label="Search research" style="border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 12px;width:min(420px,100%)"></div>`
-    + (topics.length > 1 ? chips("research", topics) : "")
-    + `<div class="grid" id="researchList">${list.map(x => `<div class="card" data-read="${esc(x.id)}" tabindex="0" role="button" data-search="${esc(lc([x.title, x.topic, x.summary, x.decision, x.conversation].join(" ")))}">
-      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><span class="meta">${esc([x.topic, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span>${x.link ? `<span aria-label="Has a link">🔗</span>` : ""}</div>
+  const how = `<details class="panel" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600">How to save research</summary>
+    <p style="margin:10px 0 6px">Click <b>Add research note</b>, give it a title and a category, and add whatever you have: your notes, options and prices, links, photos or spec sheets. Type a new category name to create it; it's then offered for future notes.</p>
+    <p style="margin:0 0 6px"><b>Conversations with Claude:</b> use the share option in the conversation to create a link and paste it into Link, or use the copy button under Claude's answers and paste the text into the notes box. Tables, headings and lists are kept.</p></details>`;
+  if(!data.research.length) return head("research") + how + empty("research", "No research saved yet", "Save what you've looked into, like home automation systems, door hardware, heat pumps or window options, with your takeaways and what you decided. Each note goes in a category so related research stays together.");
+  const topics = [...new Set(data.research.map(x => x.topic || "Uncategorized"))].sort((a, b) => a === "Uncategorized" ? 1 : b === "Uncategorized" ? -1 : a.localeCompare(b));
+  if(filters.research !== "All" && !topics.includes(filters.research)) filters.research = "All";
+  const shown = filters.research === "All" ? topics : [filters.research];
+  const card = x => `<div class="card" data-read="${esc(x.id)}" tabindex="0" role="button" data-search="${esc(lc([x.title, x.topic, x.source, x.summary, x.decision, x.conversation].join(" ")))}">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><span class="meta">${esc([x.source, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span>${x.link ? `<span aria-label="Has a link">🔗</span>` : ""}</div>
       <h3>${esc(x.title)}</h3>
       ${x.summary ? `<p class="notes" style="display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">${esc(x.summary)}</p>` : x.conversation ? `<p class="notes meta" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(x.conversation.slice(0, 400))}</p>` : ""}
-      ${x.decision ? `<p class="notes"><b>Decided:</b> ${esc(x.decision)}</p>` : ""}</div>`).join("")}</div><p class="meta" id="researchNone" hidden>No research matches that search.</p>`;
+      ${x.decision ? `<p class="notes"><b>Decided:</b> ${esc(x.decision)}</p>` : ""}${firstImage(x.files)}</div>`;
+  const sorted = xs => xs.sort((a, b) => (b.date || "").localeCompare(a.date || "") || num(b.created) - num(a.created));
+  return head("research") + how + `<div class="row" style="margin-bottom:12px"><input id="researchSearch" type="search" placeholder="Search all research" aria-label="Search research" style="border:1px solid var(--line);background:var(--surface);border-radius:3px;padding:9px 12px;width:min(420px,100%)"></div>`
+    + (topics.length > 1 ? chips("research", topics) : "")
+    + `<div id="researchList">${shown.map(tp => { const xs = sorted(data.research.filter(x => (x.topic || "Uncategorized") === tp)); return `<div class="group" data-group>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(tp)} <span class="meta" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px">${xs.length} note${xs.length > 1 ? "s" : ""}</span></h3>${canWrite ? `<button class="btn ghost" data-add="research" data-topic="${esc(tp === "Uncategorized" ? "" : tp)}">+ Add to ${esc(tp)}</button>` : ""}</div>
+      <div class="grid">${xs.map(card).join("")}</div></div>`; }).join("")}</div><p class="meta" id="researchNone" hidden>No research matches that search.</p>`;
 }
 function openReader(id){
   const x = data.research.find(r => r.id === id); if(!x) return;
   const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
   dlg.style.width = "min(860px,100%)";
-  dlg.innerHTML = `<div class="m-head"><div><span class="meta">${esc([x.topic, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span><h2>${esc(x.title)}</h2></div><button type="button" class="btn ghost" id="rdClose">Close</button></div>
+  dlg.innerHTML = `<div class="m-head"><div><span class="meta">${esc([x.topic, x.source, x.date && fmtDate(x.date)].filter(Boolean).join(" · "))}</span><h2>${esc(x.title)}</h2></div><button type="button" class="btn ghost" id="rdClose">Close</button></div>
     <div style="padding:14px 18px">
-      ${x.link ? `<p style="margin:0 0 12px"><a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener">Open the conversation in Claude</a></p>` : ""}
+      ${x.link ? `<p style="margin:0 0 12px"><a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener">${/claude\.ai/i.test(x.link) ? "Open the conversation in Claude" : "Open the link"}</a></p>` : ""}
       ${x.summary ? `<div class="panel" style="margin-bottom:12px;background:var(--paper)"><b>Key takeaways</b><p class="notes" style="margin-top:4px">${esc(x.summary)}</p></div>` : ""}
       ${x.decision ? `<p><b>Decided:</b> ${esc(x.decision)}</p>` : ""}
       ${x.conversation ? `<div class="md">${mdToHtml(x.conversation)}</div>` : ""}
@@ -1576,12 +1592,13 @@ const titleCase = s => s.replace(/\b\w/g, c => c.toUpperCase());
 function guessLabel(text){
   const t = text.toLowerCase();
   if(/architect|\boaa\b|mraic/.test(t)) return "Architect";
+  if(/survey|\bols\b|land information|topograph|boundary/.test(t)) return "Surveyor";
   if(/engineer|p\.?\s?eng|structural/.test(t)) return "Engineer";
   if(/interior|design|arido|decorat/.test(t)) return "Designer";
   if(/inspector|inspection|city of|municipal|building department/.test(t)) return "Inspector";
   if(/mortgage|bank|lender|lending|credit union|financ/.test(t)) return "Lender";
   if(/general contractor|\bgc\b|construction|contracting|builder|renovation|homes\b|project manager|superintendent/.test(t)) return "General contractor";
-  if(/plumb|electric|hvac|heating|roofing|drywall|paint|floor|tile|landscap|excavat|framing|mason|concrete|insulation|millwork|cabinet|glass|siding|demolition|survey/.test(t)) return "Subcontractor";
+  if(/plumb|electric|hvac|heating|roofing|drywall|paint|floor|tile|landscap|excavat|framing|mason|concrete|insulation|millwork|cabinet|glass|siding|demolition/.test(t)) return "Subcontractor";
   if(/supply|supplies|supplier|lumber|showroom|distribut|depot|wholesale/.test(t)) return "Supplier";
   return "";
 }
@@ -1729,6 +1746,7 @@ function datalists(){
     people: uniq([...data.contacts.map(k => k.name), ...data.conversations.map(c => c.person)]),
     companies: uniq(data.companies.map(c => c.name)),
     sheets: uniq(data.plans.map(p => p.sheet)),
+    researchTopics: uniq([...RESEARCH_TOPICS, ...data.research.map(x => x.topic)]),
     rooms: uniq([...data.materials, ...data.photos, ...data.punch, ...data.selections, ...data.warranties].map(m => m.room))
   };
   return Object.entries(lists).map(([k, v]) => `<datalist id="dl-${k}">${v.map(o => `<option value="${esc(o)}">`).join("")}</datalist>`).join("");
@@ -1889,7 +1907,7 @@ document.addEventListener("click", e => {
     if(col === "permits"){ preset.type = "Inspection"; preset.status = "Not started"; }
     if(col === "selections") preset.status = "To decide";
     if(col === "punch"){ preset.status = "Open"; preset.priority = "Normal"; preset.found = todayISO(); }
-    if(col === "research") preset.date = todayISO();
+    if(col === "research"){ preset.date = todayISO(); if(a.dataset.topic) preset.topic = a.dataset.topic; }
     if(col === "photos"){ openPhotoUpload(); return; }
     if(col === "materials") preset.status = "Specified";
     openForm(col, null, preset); return;
@@ -1935,9 +1953,11 @@ document.addEventListener("input", e => {
   if(e.target.id !== "researchSearch") return;
   const q = lc(e.target.value); let shown = 0;
   document.querySelectorAll("#researchList [data-search]").forEach(c => { const ok = !q || c.dataset.search.includes(q); c.hidden = !ok; if(ok) shown++; });
+  document.querySelectorAll("#researchList [data-group]").forEach(g => { g.hidden = !g.querySelector("[data-search]:not([hidden])"); });
   const none = $("#researchNone"); if(none) none.hidden = shown > 0;
 });
 document.addEventListener("change", e => {
+  if(e.target.id === "navSelect"){ view = e.target.value; compareTrade = null; render(); window.scrollTo(0, 0); return; }
   if(e.target.id === "invUpload"){ const fl = e.target.files; handleInvoiceUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); }
 });
 document.addEventListener("submit", async e => {
