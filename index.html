@@ -418,6 +418,8 @@ const S = {
     {k:"decision",l:"What you decided",t:"text"},
     {k:"conversation",l:"Notes, options and prices, or a pasted conversation (Markdown formatting is kept)",t:"textarea",big:1},
     {k:"files",l:"Photos, spec sheets, PDFs",t:"files"}]},
+  inbox:{title:"Inbox", one:"email", blurb:"Emails sent or forwarded to your project address. File each attachment where it belongs.", fields:[
+    {k:"subject",l:"Subject",t:"text"}]},
   holdbacks:{title:"Holdbacks", one:"finish date", blurb:"", fields:[
     {k:"vendor",l:"Contractor",t:"text",req:1},
     {k:"completionDate",l:"Date their work was finished",t:"date",req:1,half:1},
@@ -487,6 +489,7 @@ const S = {
 };
 const PROJECT = {title:"Project", one:"project details", fields:[
   {k:"address",l:"Address",t:"text"},
+  {k:"inboxEmail",l:"Project email address (for the Inbox)",t:"text",ph:"e.g. 98woodlawn.reno@gmail.com"},
   {k:"budget",l:"Total budget",t:"money",half:1},
   {k:"contingency",l:"Contingency (%)",t:"number",half:1},
   {k:"start",l:"Start date",t:"date",half:1},
@@ -494,7 +497,7 @@ const PROJECT = {title:"Project", one:"project details", fields:[
   {k:"notes",l:"Scope summary",t:"textarea"}]};
 const COLS = Object.keys(S);
 const NAV_NAMES = ["", "Planning", "Money", "The build", "People", "Reference"];
-const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["contacts","conversations","documents"],["research","warranties"]];
+const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["inbox","contacts","conversations","documents"],["research","warranties"]];
 const VIEWS = NAV.flat();
 
 // ---------- Supabase settings: paste your project's values here ----------
@@ -512,7 +515,7 @@ const data = Object.fromEntries(COLS.map(c => [c, []]));
 let project = {}, projectId = null;
 let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
 let compareTrade = null;
-const filters = {photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
+const filters = {inbox:"New", photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
 
 // ---------- persistence ----------
@@ -545,8 +548,8 @@ async function insertMany(col, bodies){
   await run(sb.from("records").insert(bodies.map(b => ({collection: col, data: b}))));
   await loadAll();
 }
-async function removeFiles(files){
-  const paths = (files || []).map(f => f.path).filter(Boolean);
+async function removeFiles(files, force){
+  const paths = (files || []).map(f => f.path).filter(p => p && (force || !String(p).startsWith("inbox/")));
   if(paths.length) await sb.storage.from(BUCKET).remove(paths);
 }
 async function remove(col, id){
@@ -631,19 +634,20 @@ function render(){
   document.title = PORTAL_NAME;
   const counts = {quotes:data.quotes.length, changeOrders:data.changeOrders.filter(c => c.status === "Pending").length};
   counts.punch = data.punch.filter(x => x.status !== "Closed").length;
+  counts.inbox = data.inbox.filter(x => x.status === "new").length;
   $("#tabs").innerHTML = NAV.map(g => g.map(v => {
     const label = v === "overview" ? "Overview" : S[v].title;
-    const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : v === "punch" && counts.punch ? `<span class="count">${counts.punch} open</span>` : "";
+    const c = v === "changeOrders" && counts.changeOrders ? `<span class="count">${counts.changeOrders} pending</span>` : v === "punch" && counts.punch ? `<span class="count">${counts.punch} open</span>` : v === "inbox" && counts.inbox ? `<span class="count">${counts.inbox} new</span>` : "";
     return `<button data-view="${v}" ${v === view ? 'aria-current="page"' : ""}>${label}${c}</button>`;
   }).join("")).join('<span class="tabsep" aria-hidden="true"></span>');
-  $("#navSelect").innerHTML = NAV.map((g, i) => { const opts = g.map(v => { const label = v === "overview" ? "Overview" : S[v].title; const c = v === "changeOrders" && counts.changeOrders ? ` (${counts.changeOrders} pending)` : v === "punch" && counts.punch ? ` (${counts.punch} open)` : ""; return `<option value="${v}" ${v === view ? "selected" : ""}>${label}${c}</option>`; }).join(""); return NAV_NAMES[i] ? `<optgroup label="${NAV_NAMES[i]}">${opts}</optgroup>` : opts; }).join("");
+  $("#navSelect").innerHTML = NAV.map((g, i) => { const opts = g.map(v => { const label = v === "overview" ? "Overview" : S[v].title; const c = v === "changeOrders" && counts.changeOrders ? ` (${counts.changeOrders} pending)` : v === "punch" && counts.punch ? ` (${counts.punch} open)` : v === "inbox" && counts.inbox ? ` (${counts.inbox} new)` : ""; return `<option value="${v}" ${v === view ? "selected" : ""}>${label}${c}</option>`; }).join(""); return NAV_NAMES[i] ? `<optgroup label="${NAV_NAMES[i]}">${opts}</optgroup>` : opts; }).join("");
   const m = $("#main");
   $("#signOut").hidden = !session;
   const gate = authScreen();
   $("#tabs").hidden = !!gate; $("#navSelect").hidden = !!gate;
   if(gate){ m.innerHTML = gate; return; }
   let banner = "";
-  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, contacts:vContacts, conversations:vConversations}[view];
+  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, inbox:vInbox, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, contacts:vContacts, conversations:vConversations}[view];
   m.innerHTML = banner + fn();
 }
 
@@ -730,6 +734,7 @@ function vOverview(){
           ...pendCO.map(c => li("changeOrders", c, `Change order: ${esc(c.title)}`, money(c.costImpact))),
           ...data.selections.filter(x => x.status !== "Decided" && x.status !== "Ordered" && x.decideBy && x.decideBy <= addDays(t, 21)).sort((a, b) => a.decideBy.localeCompare(b.decideBy)).slice(0, 4).map(x => li("selections", x, `Choose: ${esc(x.item)}`, x.decideBy < t ? `<span class="neg">overdue</span>` : "by " + fmtShort(x.decideBy)))
         ], "No open quotes, change orders or selections due.")}
+      ${data.inbox.some(x => x.status === "new") ? list("New emails", data.inbox.filter(x => x.status === "new").sort((a, b) => (b.receivedAt || "").localeCompare(a.receivedAt || "")).slice(0, 4).map(x => `<li><button data-view="inbox">${esc(emailWho(x))}: ${esc(x.subject)}</button><span class="meta">${fmtShort(x.date)}</span></li>`), "") : ""}
       ${list("Inspections", [
           ...data.permits.filter(x => /Failed/.test(x.status || "")).map(x => li("permits", x, esc(x.name), `<span class="neg">re-inspection needed</span>`)),
           ...data.permits.filter(x => x.status === "Booked" && x.date).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3).map(x => li("permits", x, esc(x.name), "booked " + fmtShort(x.date)))
@@ -1527,6 +1532,119 @@ function openReader(id){
   dlg.showModal();
 }
 
+// ---- Inbox ----
+const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
+const DEST_NAME = Object.fromEntries(DESTS);
+function emailAddr(m){ return lc((m.forwardedFrom && m.forwardedFrom.email) || m.from); }
+function emailContact(m){ const e = emailAddr(m); return data.contacts.find(k => lc(k.email) === e) || null; }
+function emailCompany(m){
+  const k = emailContact(m); if(k && companyName(k)) return companyName(k);
+  const dom = emailAddr(m).split("@")[1] || "";
+  if(!dom || GENERIC_DOMAINS.test(dom.split(".")[0])) return "";
+  const k2 = data.contacts.find(x => lc(x.email).endsWith("@" + dom));
+  if(k2 && companyName(k2)) return companyName(k2);
+  const co = data.companies.find(c => c.website && lc(c.website).replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] === dom);
+  return co ? co.name : "";
+}
+function emailWho(m){ const k = emailContact(m); return k ? k.name : ((m.forwardedFrom && (m.forwardedFrom.name || m.forwardedFrom.email)) || m.fromName || m.from); }
+function suggestDest(m, f){
+  const n = lc((f.name || "") + " " + (m.subject || "")), t = f.type || "";
+  if(t.startsWith("image/") || t.startsWith("video/")) return "photos";
+  if(/invoice|\binv\b|\bbill\b|statement|receipt|payment due|amount due/.test(n)) return "invoices";
+  if(/quote|quotation|estimate|proposal|\bbid\b|tender|pricing/.test(n)) return "quotes";
+  if(/insurance|wsib|clearance|certificate|licen[cs]e|contract|agreement|lien|\bbond\b/.test(n)) return "documents";
+  if(/drawing|\bdwg\b|\bdxf\b|plan|elevation|section|detail|survey|\b[asmep]-?\d{2,3}\b|\brev(ision)?\b/.test(n) || /\.(dwg|dxf)$/i.test(f.name || "")) return "plans";
+  const k = emailContact(m), lab = k && k.label;
+  if(/pdf/.test(t) && ["Architect", "Engineer", "Designer", "Surveyor"].includes(lab)) return "plans";
+  return "keep";
+}
+function guessDocType(n){ n = lc(n); return /wsib|clearance/.test(n) ? "WSIB clearance certificate" : /insurance|liability|coi\b/.test(n) ? "Liability insurance certificate" : /contract|agreement/.test(n) ? "Contract" : /licen[cs]e/.test(n) ? "Licence" : /lien|waiver|release/.test(n) ? "Lien waiver or release" : /\bbond\b/.test(n) ? "Bond" : "Other"; }
+function vInbox(){
+  const addr = project.inboxEmail;
+  const addrLine = addr ? `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between"><div>Send or forward project emails to <b>${esc(addr)}</b></div><button class="btn ghost" data-copytext="${esc(addr)}">Copy address</button></div><p class="meta" style="margin:6px 0 0">New emails show up here within about 10 minutes. Only emails from people in your Contacts, or from their company's email domain, come in with attachments.</p></div>` : "";
+  if(!data.inbox.length) return `<div class="viewhead"><div><h2>Inbox</h2><p>${S.inbox.blurb}</p></div></div>` + addrLine + `<div class="empty"><h3>No emails yet</h3><p>Once the Gmail script is set up, emails sent or forwarded to your project address appear here with their attachments, ready to file into Expenses, Quotes, Plans, Photos, Documents or Research.${addr ? "" : " Add your project email address in Edit project details on the Overview so it's shown here."}</p></div>`;
+  const held = data.inbox.filter(x => x.status === "held");
+  const counts = {New: data.inbox.filter(x => x.status === "new").length, Done: data.inbox.filter(x => x.status === "done").length};
+  const opts = ["New", "Done", ...(held.length ? ["Unknown senders"] : [])];
+  if(!opts.includes(filters.inbox) && filters.inbox !== "All") filters.inbox = "New";
+  const list = data.inbox.filter(x => filters.inbox === "All" ? true : filters.inbox === "Unknown senders" ? x.status === "held" : filters.inbox === "Done" ? x.status === "done" : x.status === "new")
+    .sort((a, b) => (b.receivedAt || b.date || "").localeCompare(a.receivedAt || a.date || ""));
+  const card = m => {
+    const k = emailContact(m), co = emailCompany(m);
+    if(m.status === "held") return `<div class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${fmtDate(m.date)}</span><h3 style="font-size:21px">${esc(m.subject)}</h3></div>${badge("Unknown sender", "warn")}</div>
+      <div class="meta">From ${esc(m.fromName ? m.fromName + " <" + m.from + ">" : m.from)}</div>
+      ${m.body ? `<p class="notes meta">${esc(m.body)}</p>` : ""}
+      ${(m.heldFiles || []).length ? `<p class="meta" style="margin:6px 0 0">Attachments not imported: ${m.heldFiles.map(f => esc(f.name)).join(", ")}</p>` : ""}
+      <p class="meta" style="margin:8px 0 0">If you know this sender, add them to Contacts. The email and its attachments are then imported on the next check, if it arrived in the last 14 days.</p>
+      ${canWrite ? `<div class="row" style="margin-top:8px"><button class="btn primary" data-heldadd="${esc(m.id)}">Add sender to contacts</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}</div>`;
+    const files = m.files || [];
+    return `<div class="panel">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start;gap:10px"><div><span class="meta">${fmtDate(m.date)}${m.forwardedFrom ? " · forwarded" : ""}</span><h3 style="font-size:21px">${esc(m.subject)}</h3></div>${k && k.label ? badge(k.label) : ""}</div>
+      <div class="meta">From <b style="color:var(--ink)">${esc(emailWho(m))}</b>${co ? ", " + esc(co) : ""} · ${esc(emailAddr(m))}</div>
+      ${m.body ? `<details style="margin-top:8px"><summary class="meta" style="cursor:pointer">Show message</summary><div class="notes" style="max-height:340px;overflow:auto;border-left:3px double var(--line);padding-left:10px">${esc(m.body)}</div></details>` : ""}
+      ${files.length ? `<div style="margin-top:10px;border-top:1px solid var(--line)">${files.map((f, i) => `<div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);gap:8px">
+          <a class="file" href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener">${fileIcon(f.type)}<span>${esc(f.name)}</span></a>
+          ${f.filed ? `<span class="badge good">${f.filed === "keep" ? "Kept with email" : "Filed in " + esc(S[f.filed] ? S[f.filed].title : f.filed)}</span>` : canWrite ? `<div class="row" style="gap:6px"><select id="fd-${esc(m.id)}-${i}" aria-label="Where to file ${esc(f.name)}" style="border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px">${DESTS.map(([v, l]) => `<option value="${v}" ${v === suggestDest(m, f) ? "selected" : ""}>${l}</option>`).join("")}</select><button class="btn primary" style="padding:6px 12px" data-filein="${esc(m.id)}" data-idx="${i}">File</button></div>` : ""}
+        </div>`).join("")}</div>` : `<p class="meta" style="margin:8px 0 0">No attachments.</p>`}
+      ${(m.uploadErrors || []).length ? `<p class="neg" style="margin:6px 0 0;font-size:14px">Couldn't import: ${m.uploadErrors.map(f => esc(f.name)).join(", ")}. Open the email in Gmail to get these.</p>` : ""}
+      ${canWrite ? `<div class="row" style="margin-top:10px">${m.conversationLogged ? `<span class="meta">Saved in Conversations</span>` : `<button class="btn" data-inboxconv="${esc(m.id)}">Save to conversations</button>`}<button class="btn" data-inboxdone="${esc(m.id)}">${m.status === "done" ? "Move back to new" : "Mark done"}</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}
+    </div>`;
+  };
+  return `<div class="viewhead"><div><h2>Inbox</h2><p>${S.inbox.blurb}</p></div></div>` + addrLine
+    + chips("inbox", opts).replace(/>New</, `>New (${counts.New})<`).replace(/>Unknown senders</, `>Unknown senders (${held.length})<`)
+    + (list.length ? `<div class="list1">${list.map(card).join("")}</div>` : `<p class="meta">${filters.inbox === "New" ? "You're all caught up." : "Nothing here."}</p>`);
+}
+async function fileFromInbox(id, idx){
+  const m = data.inbox.find(x => x.id === id); if(!m) return;
+  const f = (m.files || [])[idx]; if(!f) return;
+  const sel = document.getElementById(`fd-${id}-${idx}`); const dest = sel ? sel.value : suggestDest(m, f);
+  const fileRec = {path: f.path, name: f.name, type: f.type, size: f.size};
+  const k = emailContact(m), company = emailCompany(m) || emailWho(m);
+  const mark = async col => { await updRec(m, {files: m.files.map((x, i) => i === idx ? {...x, filed: col} : x)}); await loadAll(); };
+  if(dest === "keep"){ await mark("keep"); return; }
+  if(dest === "invoices"){
+    toast("Reading the invoice…");
+    let parsed = {};
+    if(/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)){
+      try { const {data: blob, error} = await sb.storage.from(BUCKET).download(f.path); if(error) throw error; const lines = await pdfLines(new File([blob], f.name, {type: f.type || "application/pdf"})); if(lines.length > 2) parsed = parseInvoice(lines, f.name); } catch(e){}
+    }
+    if(!parsed.vendor || parsed.vendor === f.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ")) parsed.vendor = company;
+    if(!parsed.category && k && k.label) parsed.category = LABEL_TO_CAT[k.label] || "";
+    if(!parsed.date) parsed.date = m.date;
+    parsed.holdback = defaultHoldback(parsed); parsed.budgetLineId = guessBudgetLine(parsed);
+    const body = {vendor: "", category: "", invoiceNumber: "", budgetLineId: "", date: "", dueDate: "", subtotal: "", tax: "", total: "", status: "Unpaid", paidAmount: "", paidDate: "", notes: "From email: " + m.subject, ...parsed, files: [fileRec], needsReview: true, created: Date.now(), updated: Date.now()};
+    const newId = await insertOne("invoices", body);
+    await mark("invoices");
+    openForm("invoices", data.invoices.find(x => x.id === newId) || {...body, id: newId});
+    toast("Invoice added to Expenses. Check the details and save.");
+    return;
+  }
+  const lab = k && k.label;
+  const presets = {
+    quotes: {vendor: company, trade: lab && lab !== "Other" && lab !== "Supplier" && lab !== "Subcontractor" ? lab : "", date: m.date, status: "Received", contact: emailAddr(m), files: [fileRec]},
+    plans: {sheet: f.name.replace(/\.[^.]+$/, "").replace(/_+/g, " "), date: m.date, author: company, status: "For review", discipline: lab === "Engineer" ? "Structural" : lab === "Surveyor" ? "Site & survey" : lab === "Designer" ? "Interior design" : "Architectural", notes: m.subject, files: [fileRec]},
+    photos: {date: m.date, caption: m.subject, insideWalls: "No", files: [fileRec]},
+    documents: {company, docType: guessDocType(f.name + " " + m.subject), title: f.name, files: [fileRec]},
+    research: {title: m.subject, source: "Supplier or contractor", date: m.date, conversation: m.body || "", files: [fileRec]}
+  };
+  openForm(dest, null, {...presets[dest], __inbox: {id, idx}});
+}
+async function inboxToConversation(id){
+  const m = data.inbox.find(x => x.id === id); if(!m) return;
+  const k = emailContact(m);
+  await insertOne("conversations", {date: m.date, person: k ? k.name : emailWho(m), role: k ? (k.label || "") : "", method: "Email", subject: m.subject, notes: m.body || "", followUp: "", followUpDate: "", files: (m.files || []).map(f => ({path: f.path, name: f.name, type: f.type, size: f.size})), contactId: k ? k.id : "", created: Date.now(), updated: Date.now()});
+  await updRec(m, {conversationLogged: true});
+  await loadAll(); toast("Saved to Conversations.");
+}
+async function deleteEmail(id){
+  const m = data.inbox.find(x => x.id === id); if(!m) return;
+  if(!confirm("Delete this email from the portal? It stays in Gmail. Attachments you've filed elsewhere are kept.")) return;
+  await run(sb.from("records").delete().eq("id", id));
+  await removeFiles((m.files || []).filter(f => !f.filed || f.filed === "keep"), true).catch(() => {});
+  await loadAll(); toast("Email deleted from the portal.");
+}
+
 // ---- Contacts ----
 const lc = s => String(s || "").trim().toLowerCase();
 function contactFor(conv){
@@ -1844,6 +1962,7 @@ function openForm(col, rec, preset){
     try {
       if(col === "contacts") await linkCompany(body);
       await save(col, rec && rec.id, body); saved = true;
+      if(r.__inbox){ const ib = data.inbox.find(x => x.id === r.__inbox.id); if(ib){ await updRec(ib, {files: (ib.files || []).map((x, i) => i === r.__inbox.idx ? {...x, filed: col} : x)}); await loadAll(); } }
       const keep = new Set(files.map(f => f.path));
       removeFiles(original.filter(f => !keep.has(f.path))).catch(() => {});
       close(); toast(`Saved ${sch.one}.`);
@@ -1915,6 +2034,18 @@ document.addEventListener("click", e => {
   if(e.target.closest("[data-paste]")){ openPaste(); return; }
   if(e.target.closest("[data-export]")){ exportInvoices(); return; }
   if(e.target.closest("[data-photoupload]")){ openPhotoUpload(); return; }
+  const fi2 = e.target.closest("[data-filein]");
+  if(fi2){ fileFromInbox(fi2.dataset.filein, +fi2.dataset.idx).catch(() => toast("Couldn't file it. Try again.")); return; }
+  const ic = e.target.closest("[data-inboxconv]");
+  if(ic){ inboxToConversation(ic.dataset.inboxconv).catch(() => toast("Couldn't save. Try again.")); return; }
+  const idn = e.target.closest("[data-inboxdone]");
+  if(idn){ const m = data.inbox.find(x => x.id === idn.dataset.inboxdone); if(m) updRec(m, {status: m.status === "done" ? "new" : "done"}).then(loadAll).catch(() => toast("Couldn't save. Try again.")); return; }
+  const idl = e.target.closest("[data-inboxdel]");
+  if(idl){ deleteEmail(idl.dataset.inboxdel).catch(() => toast("Couldn't delete. Try again.")); return; }
+  const ha = e.target.closest("[data-heldadd]");
+  if(ha){ const m = data.inbox.find(x => x.id === ha.dataset.heldadd); if(m){ const parsed = parseContact([m.fromName, m.from].filter(Boolean).join("\n")); openForm("contacts", null, {...parsed, name: m.fromName || parsed.name || "", email: m.from}); } return; }
+  const ct = e.target.closest("[data-copytext]");
+  if(ct){ (navigator.clipboard ? navigator.clipboard.writeText(ct.dataset.copytext) : Promise.reject()).then(() => toast("Copied."), () => toast("Couldn't copy.")); return; }
   if(e.target.closest("[data-importwarranty]")){ importWarranties().catch(() => toast("Couldn't add them. Try again.")); return; }
   const tm = e.target.closest("[data-tomaterial]");
   if(tm){ selectionToMaterial(tm.dataset.tomaterial).catch(() => toast("Couldn't add it. Try again.")); return; }
