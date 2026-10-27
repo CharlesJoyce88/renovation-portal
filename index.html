@@ -519,6 +519,9 @@ const S = {
     {k:"files",l:"MLS listing sheet, photos and floor plans",t:"files"}]},
   subject:{title:"Our house", one:"house details", blurb:"", fields:[
     {k:"address",l:"Address",t:"text"},
+    {k:"purchasePrice",l:"What we paid (purchase price)",t:"money",half:1},
+    {k:"purchaseDate",l:"Purchase date",t:"date",half:1},
+    {k:"sqftAtPurchase",l:"Square feet above grade when we bought",t:"number",half:1},
     {k:"propertyType",l:"Type",t:"select",o:["Detached","Semi-detached","Row / townhouse","Link","Duplex / multiplex","Condo townhouse","Other"],half:1},
     {k:"style",l:"Style",t:"text",half:1,list:"compStyles"},
     {k:"era",l:"Year built or era",t:"text",half:1},
@@ -526,9 +529,6 @@ const S = {
     {k:"bathrooms",l:"Bathrooms (after the renovation)",t:"number",half:1},
     {k:"sqft",l:"Square feet above grade (after the addition)",t:"number",half:1},
     {k:"sqftBelow",l:"Finished square feet below grade",t:"number",half:1},
-    {k:"purchasePrice",l:"Purchase price",t:"money",half:1},
-    {k:"purchaseDate",l:"Purchase date",t:"date",half:1},
-    {k:"sqftAtPurchase",l:"Square feet above grade when purchased",t:"number",half:1},
     {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
     {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
     {k:"parking",l:"Parking spaces",t:"number",half:1},
@@ -555,7 +555,8 @@ const S = {
     {k:"email",l:"Email",t:"text"},
     {k:"website",l:"Website",t:"text",half:1},
     {k:"address",l:"Address",t:"text",half:1},
-    {k:"notes",l:"Notes",t:"textarea"}]},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Documents from this contact (previous work, proposals, references…)",t:"files"}]},
   companies:{title:"Companies", one:"company", blurb:"", fields:[
     {k:"name",l:"Company name",t:"text",req:1},
     {k:"label",l:"Type",t:"select",o:LABELS,half:1},
@@ -2093,7 +2094,7 @@ function vComps(){
 }
 function subjectHero(subj){
   const btns = canWrite ? `<label class="btn" style="cursor:pointer">Upload our MLS listing<input type="file" id="subjListing" accept=".pdf,application/pdf" hidden></label><label class="btn" style="cursor:pointer">Upload floor plans<input type="file" id="subjFloors" accept=".pdf,application/pdf,image/*" multiple hidden></label><button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit details" : "Add details by hand"}</button>` : "";
-  if(!subj) return `<div class="panel" style="margin-bottom:14px;border-color:var(--accent)"><span class="meta" style="font-variant:small-caps;letter-spacing:.06em">Our house</span><h3 style="font-size:26px;margin:2px 0 6px">${esc(project.address || "98 Woodlawn")}</h3><p class="meta" style="margin:0 0 10px">Upload the MLS listing from when you bought, plus floor plans, to fill in your house's details and photos. Then update the size, bedrooms and bathrooms to how they'll be after the renovation and addition, so comparables are scored against the finished house.</p><div class="row">${btns}</div></div>`;
+  if(!subj) return `<div class="panel" style="margin-bottom:14px;border-color:var(--accent)"><span class="meta" style="font-variant:small-caps;letter-spacing:.06em">Our house</span><h3 style="font-size:26px;margin:2px 0 6px">${esc(project.address || "98 Woodlawn")}</h3><p class="meta" style="margin:0 0 10px">Upload the MLS listing from when you bought, plus floor plans, to fill in your house's details and photos. Then update the size, bedrooms and bathrooms to how they'll be after the renovation and addition, so comparables are scored against the finished house.</p><div class="row">${btns}${canWrite ? `<button class="btn ghost" data-subjectfield="purchasePrice">+ Add what we paid</button>` : ""}</div></div>`;
   const addr = subj.address || project.address;
   const photos = compPhotos(subj), floors = compFloors(subj);
   const cover = photos[0] && fileUrl(photos[0].path);
@@ -2111,6 +2112,7 @@ function subjectHero(subj){
           ${fact("Total finished", num(subj.sqft) ? totalSqft(subj).toLocaleString() + " sq ft" : "")}
           ${fact("Lot", esc(lotText(subj)))}${fact("Parking", esc(parkText(subj)))}${fact("Basement", esc(subj.basement || ""))}${fact("Taxes", num(subj.taxes) ? money(subj.taxes) + "/yr" : "")}
         </div>
+        ${!num(subj.purchasePrice) && canWrite ? `<div style="margin:0 0 12px;padding-top:10px;border-top:1px solid var(--line)"><button class="btn ghost" style="padding-left:0" data-subjectfield="purchasePrice">+ Add what we paid</button> <span class="meta">to see the price per square foot we bought at</span></div>` : ""}
         ${num(subj.purchasePrice) ? (() => {
           const sqAt = num(subj.sqftAtPurchase) || num(subj.sqft);
           const ppsfBought = sqAt ? num(subj.purchasePrice) / sqAt : null;
@@ -2345,7 +2347,7 @@ async function saveRenderedPage(btn){
 }
 
 // ---- Inbox ----
-const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["compNew","Comparables: new comparable"],["compAdd","Comparables: add to one"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
+const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["contactDoc","Contacts: attach to a contact"],["compNew","Comparables: new comparable"],["compAdd","Comparables: add to one"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
 const DEST_NAME = Object.fromEntries(DESTS);
 function emailAddr(m){ return lc((m.forwardedFrom && m.forwardedFrom.email) || m.from); }
 function emailContact(m){ const e = emailAddr(m); return data.contacts.find(k => lc(k.email) === e) || null; }
@@ -2379,6 +2381,7 @@ function isCompEmail(m){
 }
 function compKindFor(f){ return isPdfFile(f) ? (/floor|plan|layout/i.test(f.name || "") ? "floor" : "listing") : (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo"); }
 function suggestDest(m, f){
+  if(emailContact(m) && /portfolio|previous\s*work|past\s*(work|projects?)|lookbook|brochure|references?|testimonial|credentials|capabilit|company\s*profile|case\s*stud/i.test((f.name || "") + " " + (m.subject || ""))) return "contactDoc";
   if(isCompEmail(m)){ const c = compForFile(m, f); if(c) return "compAdd"; if(fileAddrKey(f)) return "compNew"; return data.comps.length && !isPdfFile(f) ? "compAdd" : "compNew"; }
   const n = lc((f.name || "") + " " + (m.subject || "")), t = f.type || "";
   if(t.startsWith("image/") || t.startsWith("video/")) return "photos";
@@ -2417,7 +2420,7 @@ function vInbox(){
       ${m.body ? `<details style="margin-top:8px"><summary class="meta" style="cursor:pointer">Show message</summary><div class="notes" style="max-height:340px;overflow:auto;border-left:3px double var(--line);padding-left:10px">${esc(m.body)}</div></details>` : ""}
       ${files.length ? `<div style="margin-top:10px;border-top:1px solid var(--line)">${files.map((f, i) => `<div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);gap:8px">
           <a class="file" href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener">${fileIcon(f.type)}<span>${esc(f.name)}</span></a>
-          ${f.filed ? `<span class="badge good">${f.filed === "keep" ? "Kept with email" : "Filed in " + esc(S[f.filed] ? S[f.filed].title : f.filed)}</span>` : canWrite ? `<div class="row" style="gap:6px"><select id="fd-${esc(m.id)}-${i}" aria-label="Where to file ${esc(f.name)}" style="border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px">${DESTS.map(([v, l]) => `<option value="${v}" ${v === suggestDest(m, f) ? "selected" : ""}>${l}</option>`).join("")}</select>${compPickers(m, f, i)}<button class="btn primary" style="padding:6px 12px" data-filein="${esc(m.id)}" data-idx="${i}">File</button></div>` : ""}
+          ${f.filed ? `<span class="badge good">${f.filed === "keep" ? "Kept with email" : "Filed in " + esc(S[f.filed] ? S[f.filed].title : f.filed)}</span>` : canWrite ? `<div class="row" style="gap:6px"><select id="fd-${esc(m.id)}-${i}" aria-label="Where to file ${esc(f.name)}" style="border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px">${DESTS.map(([v, l]) => `<option value="${v}" ${v === suggestDest(m, f) ? "selected" : ""}>${l}</option>`).join("")}</select>${compPickers(m, f, i)}${contactPickers(m, f, i)}<button class="btn primary" style="padding:6px 12px" data-filein="${esc(m.id)}" data-idx="${i}">File</button></div>` : ""}
         </div>`).join("")}</div>` : `<p class="meta" style="margin:8px 0 0">No attachments.</p>`}
       ${(m.uploadErrors || []).length ? `<p class="neg" style="margin:6px 0 0;font-size:14px">Couldn't import: ${m.uploadErrors.map(f => esc(f.name)).join(", ")}. Open the email in Gmail to get these.</p>` : ""}
       ${canWrite ? `<div class="row" style="margin-top:10px">${m.conversationLogged ? `<span class="meta">Saved in Conversations</span>` : `<button class="btn" data-inboxconv="${esc(m.id)}">Save to conversations</button>`}${files.some(f => !f.filed) && isCompEmail(m) ? `<button class="btn primary" data-inboxcomp="${esc(m.id)}">File all to a comparable</button>` : ""}<button class="btn" data-inboxdone="${esc(m.id)}">${m.status === "done" ? "Move back to new" : "Mark done"}</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}
@@ -2431,6 +2434,12 @@ function vInbox(){
 const SEL_STYLE = "border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px;max-width:220px";
 function compOptions(selId){ return data.comps.slice().sort((a, b) => (a.address || "").localeCompare(b.address || "")).map(c => `<option value="${esc(c.id)}" ${c.id === selId ? "selected" : ""}>${esc(c.address)}</option>`).join(""); }
 function kindOptions(k){ return [["floor", "Floor plan"], ["photo", "Photo"], ["listing", "MLS listing or document"]].map(([v, l]) => `<option value="${v}" ${v === k ? "selected" : ""}>${l}</option>`).join(""); }
+function contactPickers(m, f, i){
+  const show = suggestDest(m, f) === "contactDoc"; const k = emailContact(m);
+  return `<span id="fy-${esc(m.id)}-${i}" class="row" style="gap:6px;${show ? "" : "display:none"}">
+    <select id="fcc-${esc(m.id)}-${i}" aria-label="Which contact" style="${SEL_STYLE}">${data.contacts.length ? "" : `<option value="">No contacts yet</option>`}${data.contacts.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(x => `<option value="${esc(x.id)}" ${k && x.id === k.id ? "selected" : ""}>${esc(x.name)}${companyName(x) ? " (" + esc(companyName(x)) + ")" : ""}</option>`).join("")}</select>
+    <select id="fct-${esc(m.id)}-${i}" aria-label="What this document is" style="${SEL_STYLE}">${CONTACT_DOC_TYPES.map(t => `<option ${t === (guessContactDocType(f.name) !== "Other" ? guessContactDocType(f.name) : guessContactDocType(m.subject || "")) ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></span>`;
+}
 function compPickers(m, f, i){
   const show = suggestDest(m, f) === "compAdd";
   const match = compForFile(m, f);
@@ -2525,6 +2534,16 @@ async function fileFromInbox(id, idx){
   const k = emailContact(m), company = emailCompany(m) || emailWho(m);
   const mark = async col => { await updRec(m, {files: m.files.map((x, i) => i === idx ? {...x, filed: col} : x)}); await loadAll(); await autoDone(id); };
   if(dest === "keep"){ await mark("keep"); return; }
+  if(dest === "contactDoc"){
+    const cid = (document.getElementById(`fcc-${id}-${idx}`) || {}).value;
+    const k = data.contacts.find(x => x.id === cid);
+    if(!k){ toast("Choose which contact, or add the sender to Contacts first."); return; }
+    const docType = (document.getElementById(`fct-${id}-${idx}`) || {}).value || guessContactDocType(f.name);
+    await updRec(k, {files: [...(k.files || []), {...fileRec, docType, date: m.date, note: "From email: " + m.subject}]});
+    await mark("contacts");
+    toast(`Attached to ${k.name} as ${docType.toLowerCase()}.`);
+    return;
+  }
   if(dest === "compNew" || dest === "compAdd"){
     const compId = dest === "compAdd" ? (document.getElementById(`fc-${id}-${idx}`) || {}).value || "" : "";
     if(dest === "compAdd" && !compId){ toast("Choose which comparable, or pick \u201cnew comparable\u201d."); return; }
@@ -2640,10 +2659,59 @@ function contactCard(k){
       <div class="meta">${cv.length ? `${cv.length} conversation${cv.length > 1 ? "s" : ""}, latest ${fmtDate(cv[0].date)}` : "No conversations yet"}</div>
       ${cv.slice(0, 3).map(c => `<button class="btn ghost" style="display:block;text-align:left;padding:2px 0;color:var(--ink);font-size:15px" data-edit="conversations" data-id="${esc(c.id)}"><span class="meta">${fmtShort(c.date)}</span> ${esc(c.subject || c.method || "Conversation")}</button>`).join("")}
     </div>
+    ${contactDocsHTML(k)}
     <div class="row" style="margin-top:auto;padding-top:6px">
-      ${canWrite ? `<button class="btn primary" data-logconv="${esc(k.id)}">Log conversation</button><button class="btn" data-edit="contacts" data-id="${esc(k.id)}">Edit</button>` : ""}
+      ${canWrite ? `<button class="btn primary" data-logconv="${esc(k.id)}">Log conversation</button><button class="btn" data-contactdocs="${esc(k.id)}">Add documents</button><button class="btn" data-edit="contacts" data-id="${esc(k.id)}">Edit</button>` : ""}
       <button class="btn ghost" data-copy="${esc(k.id)}">Copy details</button>
     </div></div>`;
+}
+
+const CONTACT_DOC_TYPES = ["Previous work / portfolio", "Proposal", "Quote or estimate", "Contract or agreement", "References", "Insurance, WSIB or licence", "Drawings or sketches", "Invoice or receipt", "Other"];
+function guessContactDocType(name){ const n = lc(name).replace(/[_\-.]+/g, " "); return /portfolio|previous|past\s+(work|projects?)|projects?\b|lookbook|brochure|gallery|case\s+stud/.test(n) ? "Previous work / portfolio" : /proposal|scope/.test(n) ? "Proposal" : /quote|estimate|pricing|bid/.test(n) ? "Quote or estimate" : /contract|agreement|engagement/.test(n) ? "Contract or agreement" : /reference|testimonial|review/.test(n) ? "References" : /insurance|wsib|clearance|licen[cs]e|certificate/.test(n) ? "Insurance, WSIB or licence" : /drawing|sketch|plan|elevation|render/.test(n) ? "Drawings or sketches" : /invoice|receipt/.test(n) ? "Invoice or receipt" : "Other"; }
+function contactDocsHTML(k){
+  const docs = (k.files || []);
+  if(!docs.length) return "";
+  const groups = {};
+  docs.forEach((f, i) => (groups[f.docType || "Other"] ||= []).push({...f, i}));
+  const order = [...CONTACT_DOC_TYPES, ...Object.keys(groups).filter(g => !CONTACT_DOC_TYPES.includes(g))];
+  return `<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px"><div class="meta">${docs.length} document${docs.length > 1 ? "s" : ""}</div>
+    ${order.filter(g => groups[g]).map(g => `<div style="margin-top:6px"><div class="meta" style="font-variant:small-caps;letter-spacing:.05em;font-size:12px">${esc(g)}</div><div class="files" style="margin-top:3px">${groups[g].map(f => `<a class="file" href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener" data-stop title="${esc([f.name, f.note, f.date && "Received " + fmtDate(f.date)].filter(Boolean).join(" · "))}">${fileIcon(f.type)}<span>${esc(f.name)}</span></a>`).join("")}</div></div>`).join("")}</div>`;
+}
+function openContactDocs(id, preset){
+  const k = data.contacts.find(x => x.id === id); if(!k) return;
+  const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
+  dlg.innerHTML = `<form id="cdForm" method="dialog">
+    <div class="m-head"><h2>Add documents</h2><button type="button" class="btn ghost" id="cdClose">Close</button></div>
+    <div class="m-body">
+      <p class="f meta" style="margin:0">From <b style="color:var(--ink)">${esc(k.name)}</b>${companyName(k) ? ", " + esc(companyName(k)) : ""}</p>
+      <div class="f"><label for="cdFiles">Files</label><input id="cdFiles" type="file" multiple><span class="meta" style="font-size:13px">Any file type up to ${MAX_MB} MB each: PDFs, photos, Word, Excel.</span></div>
+      <div class="f half"><label for="cdType">What are they?</label><select id="cdType"><option value="">Work it out from the file names</option>${CONTACT_DOC_TYPES.map(t => `<option>${esc(t)}</option>`).join("")}</select></div>
+      <div class="f half"><label for="cdDate">Received</label><input id="cdDate" type="date" value="${todayISO()}"></div>
+      <div class="f"><label for="cdNote">Note (optional)</label><input id="cdNote" placeholder="e.g. Kitchen projects from 2024, sent after our first call"></div>
+      <p class="uploading f" id="cdState"></p>
+    </div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="cdCancel">Cancel</button><button type="submit" class="btn primary" id="cdSave">Add documents</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#cdClose").onclick = close; $("#cdCancel").onclick = close;
+  $("#cdForm").onsubmit = async e => {
+    e.preventDefault();
+    const files = [...$("#cdFiles").files], st = $("#cdState");
+    if(!files.length){ st.textContent = "Choose at least one file."; return; }
+    const btn = $("#cdSave"); btn.disabled = true;
+    const type = $("#cdType").value, date = $("#cdDate").value, note = $("#cdNote").value.trim();
+    const recs = []; let failed = 0;
+    for(let i = 0; i < files.length; i++){
+      const f = files[i]; st.textContent = `Uploading ${i + 1} of ${files.length}…`;
+      if(f.size > MAX_MB * 1024 * 1024){ failed++; continue; }
+      try { const r = await uploadToStorage(f); recs.push({...r, docType: type || guessContactDocType(f.name), date, note}); } catch(err){ failed++; }
+    }
+    try {
+      const cur = data.contacts.find(x => x.id === id);
+      await updRec(cur, {files: [...(cur.files || []), ...recs]}); await loadAll();
+      close(); toast(`${recs.length} document${recs.length === 1 ? "" : "s"} added to ${k.name}${failed ? `; ${failed} failed` : ""}.`);
+    } catch(err){ btn.disabled = false; st.textContent = "Couldn't save. Try again."; }
+  };
+  dlg.showModal();
 }
 
 const GENERIC_DOMAINS = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|ymail|icloud|me|mac|aol|proton|protonmail|rogers|bell|sympatico|shaw|telus|cogeco|videotron|comcast|verizon|att|sbcglobal|gmx|mail|zoho)$/i;
@@ -3079,11 +3147,15 @@ document.addEventListener("click", e => {
   if(e.target.closest("[data-paste]")){ openPaste(); return; }
   if(e.target.closest("[data-export]")){ exportInvoices(); return; }
   if(e.target.closest("[data-photoupload]")){ openPhotoUpload(); return; }
+  const cdb = e.target.closest("[data-contactdocs]");
+  if(cdb){ openContactDocs(cdb.dataset.contactdocs); return; }
   const cpo = e.target.closest("[data-comp]");
   if(cpo && !e.target.closest("a")){ compDetail = cpo.dataset.comp || null; render(); window.scrollTo(0, 0); return; }
   const cl = e.target.closest("[data-complayout]");
   if(cl){ compLayout = cl.dataset.complayout; render(); return; }
   if(e.target.closest("[data-comppaste]")){ openListingPaste(); return; }
+  const sf = e.target.closest("[data-subjectfield]");
+  if(sf){ openForm("subject", data.subject[0] || null, data.subject[0] ? null : {address: project.address || ""}); setTimeout(() => { const el = document.querySelector(`#dlg [name="${sf.dataset.subjectfield}"]`); if(el){ el.scrollIntoView({block: "center"}); el.focus(); } }, 60); return; }
   if(e.target.closest("[data-subject]")){ openForm("subject", data.subject[0] || null, data.subject[0] ? null : {address: project.address || ""}); return; }
   const rp = e.target.closest("[data-renderpdf]");
   if(rp){ renderCompPdfs(rp.dataset.renderpdf).catch(() => toast("Couldn't show the listing pages.")); return; }
@@ -3147,7 +3219,7 @@ document.addEventListener("input", e => {
   const none = $("#researchNone"); if(none) none.hidden = shown > 0;
 });
 document.addEventListener("change", e => {
-  if(/^fd-/.test(e.target.id || "")){ const fx = document.getElementById("fx-" + e.target.id.slice(3)); if(fx) fx.style.display = e.target.value === "compAdd" ? "" : "none"; return; }
+  if(/^fd-/.test(e.target.id || "")){ const rest = e.target.id.slice(3); const fx = document.getElementById("fx-" + rest); if(fx) fx.style.display = e.target.value === "compAdd" ? "" : "none"; const fy = document.getElementById("fy-" + rest); if(fy) fy.style.display = e.target.value === "contactDoc" ? "" : "none"; return; }
   if(e.target.id === "subjListing" || e.target.id === "subjFloors"){ const fl = [...e.target.files], mode = e.target.id === "subjListing" ? "listing" : "floors"; e.target.value = ""; handleSubjectUpload(fl, mode).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "compUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleCompUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "compSort"){ compSort = e.target.value; render(); return; }
