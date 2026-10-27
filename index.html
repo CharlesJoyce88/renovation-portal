@@ -174,6 +174,28 @@ dialog::backdrop{background:rgba(10,14,16,.55)}
 .md pre{background:var(--chip);padding:10px;border-radius:6px;overflow-x:auto}
 .md table{min-width:0}
 .list1{display:grid;gap:10px;max-width:860px}
+/* Comparables table: fits the page width without sideways scrolling */
+.comptable{min-width:0;width:100%;table-layout:auto}
+.comptable th,.comptable td{padding:8px 7px;font-size:14px;line-height:1.35;vertical-align:top}
+.comptable th{font-size:12px;letter-spacing:.03em;white-space:normal;vertical-align:bottom}
+.comptable td .meta{font-size:12.5px}
+.comptable .ct-photo{width:64px;padding-right:2px}
+.comptable .ct-addr{min-width:150px}
+.comptable .ct-addr b{font-size:15px}
+.comptable tr.ct-ours{background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer}
+.comptable .badge{font-size:13px}
+@media (max-width:860px){
+  .ct-wrap{border:0;background:none;overflow:visible}
+  .comptable,.comptable tbody{display:block}
+  .comptable thead{display:none}
+  .comptable tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:10px;margin-bottom:10px}
+  .comptable td{display:block;border:0;padding:2px 0;text-align:left}
+  .comptable td.n{text-align:left}
+  .comptable td[data-label]:not([data-label=""])::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);font-variant:small-caps;letter-spacing:.05em}
+  .comptable .ct-photo{width:auto}
+  .comptable tr.ct-ours{background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+  .comptable .ct-addr{grid-column:2 / span 2;min-width:0}
+}
 a.maplink{color:inherit;text-decoration:none;border-bottom:1px dotted color-mix(in srgb,currentColor 45%,transparent)}
 a.maplink:hover,a.maplink:focus-visible{color:var(--blue);border-bottom-color:var(--blue)}
 .lb{position:fixed;inset:0;z-index:100;background:rgba(12,15,13,.92);display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top,0px)) 64px calc(56px + env(safe-area-inset-bottom,0px));touch-action:pan-y}
@@ -504,6 +526,9 @@ const S = {
     {k:"bathrooms",l:"Bathrooms (after the renovation)",t:"number",half:1},
     {k:"sqft",l:"Square feet above grade (after the addition)",t:"number",half:1},
     {k:"sqftBelow",l:"Finished square feet below grade",t:"number",half:1},
+    {k:"purchasePrice",l:"Purchase price",t:"money",half:1},
+    {k:"purchaseDate",l:"Purchase date",t:"date",half:1},
+    {k:"sqftAtPurchase",l:"Square feet above grade when purchased",t:"number",half:1},
     {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
     {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
     {k:"parking",l:"Parking spaces",t:"number",half:1},
@@ -2083,8 +2108,19 @@ function subjectHero(subj){
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 16px;margin:12px 0">
           ${fact("Bedrooms", esc(subj.bedrooms || ""))}${fact("Bathrooms", subj.bathrooms !== "" && subj.bathrooms != null ? String(num(subj.bathrooms)) : "")}
           ${fact("Above grade", num(subj.sqft) ? num(subj.sqft).toLocaleString() + " sq ft" : "")}${fact("Below grade", num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() + " sq ft" : "")}
+          ${fact("Total finished", num(subj.sqft) ? totalSqft(subj).toLocaleString() + " sq ft" : "")}
           ${fact("Lot", esc(lotText(subj)))}${fact("Parking", esc(parkText(subj)))}${fact("Basement", esc(subj.basement || ""))}${fact("Taxes", num(subj.taxes) ? money(subj.taxes) + "/yr" : "")}
         </div>
+        ${num(subj.purchasePrice) ? (() => {
+          const sqAt = num(subj.sqftAtPurchase) || num(subj.sqft);
+          const ppsfBought = sqAt ? num(subj.purchasePrice) / sqAt : null;
+          const nowP = data.comps.filter(inEstimate).map(compPpsf).filter(Boolean);
+          const medNow = nowP.length ? median(nowP) : null;
+          return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 16px;margin:0 0 12px;padding-top:10px;border-top:1px solid var(--line)">
+            ${fact("Purchased", money(subj.purchasePrice) + (subj.purchaseDate ? `<div class="meta" style="font-size:13px">${fmtDate(subj.purchaseDate)}</div>` : ""))}
+            ${ppsfBought ? fact("Purchase $ / sq ft", money(ppsfBought) + `<div class="meta" style="font-size:13px">above grade, at ${sqAt.toLocaleString()} sq ft${num(subj.sqftAtPurchase) && num(subj.sqft) && num(subj.sqftAtPurchase) !== num(subj.sqft) ? " (before the addition)" : ""}</div>`) : ""}
+            ${ppsfBought && medNow ? fact("Comparables today", money(medNow) + `/sq ft<div class="meta" style="font-size:13px">median, ${medNow >= ppsfBought ? "+" : "−"}${Math.abs(Math.round((medNow - ppsfBought) / ppsfBought * 100))}% vs what we paid</div>`) : ""}
+          </div>`; })() : ""}
         <div class="row">${btns}</div></div>
     </div>
     ${photos.length > 1 ? `<div style="margin-top:14px"><div class="meta" style="margin-bottom:4px">Photos (${photos.length})</div>${strip(photos, "photo")}</div>` : ""}
@@ -2107,6 +2143,9 @@ async function handleSubjectUpload(files, mode){
         const doc = await openPdfDoc(f);
         const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
         const L = parseListing(lines.join("\n"));
+        if(L.soldPrice) L.purchasePrice = L.soldPrice;
+        if(L.soldDate) L.purchaseDate = L.soldDate;
+        if(L.sqft) L.sqftAtPurchase = L.sqft;
         Object.keys(L).forEach(k => { if(keys.includes(k) && (!subj || subj[k] === undefined || subj[k] === "" || subj[k] === null)) fill[k] = L[k]; });
         toast("Finding the photos…");
         const shots = await extractPdfPhotos(doc);
@@ -2129,20 +2168,33 @@ async function handleSubjectUpload(files, mode){
 }
 
 function compRows(list, subj){
+  const dash = `<span class="meta">—</span>`;
+  const bedBath = c => (c.bedrooms || c.bathrooms !== "" && c.bathrooms != null) ? `${esc(c.bedrooms || "?")} / ${c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : "?"}` : dash;
+  const sqCell = c => num(c.sqft) ? `${num(c.sqft).toLocaleString()}${num(c.sqftBelow) ? `<div class="meta">+${num(c.sqftBelow).toLocaleString()} below</div>` : ""}` : dash;
+  const parkShort = c => { const p = num(c.parking) || c.parking === 0 ? `${num(c.parking)}` : ""; const g = c.garage ? (c.garage === "None" ? "no garage" : `${c.garage.toLowerCase()} garage`) : ""; return (p || g) ? `${p ? p + " spot" + (num(c.parking) === 1 ? "" : "s") : ""}${p && g ? "<br>" : ""}<span class="meta">${esc(g)}</span>` : dash; };
   const row = c => `<tr data-comp="${esc(c.id)}" class="${c.needsReview ? "needs" : ""}" style="${c.include === "No" ? "opacity:.55" : ""}">
-    <td style="width:96px">${compThumb(c, 60)}</td>
-    <td><b>${mapLink(c.address)}</b><div class="meta">${esc([c.area, c.propertyType, c.style].filter(Boolean).join(" · "))}</div>${c.needsReview ? badge("Check details", "warn") : c.include === "No" ? badge("Not in estimate") : ""}</td>
-    <td>${c.status === "Sold" ? fmtDate(c.soldDate) || "Sold" : esc(c.status || "")}${c.dom !== "" && c.dom != null ? `<div class="meta">${num(c.dom)} days</div>` : ""}</td>
-    <td class="n"><b>${money(compPrice(c))}</b>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">list ${money(c.listPrice)} · ${Math.round(compSlp(c) * 100)}%</div>` : ""}</td>
-    <td class="n">${compPpsf(c) ? money(compPpsf(c)) : "—"}</td>
-    <td class="n">${esc(c.bedrooms || "—")}</td><td class="n">${c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : "—"}</td>
-    <td class="n">${num(c.sqft) ? num(c.sqft).toLocaleString() : "—"}</td>
-    <td class="n">${num(c.sqftBelow) ? num(c.sqftBelow).toLocaleString() : "—"}</td>
-    <td>${esc(lotText(c) || "—")}</td><td>${esc(parkText(c) || "—")}</td>
-    <td class="n">${compAdj(c) != null ? money(compAdj(c)) : "—"}</td>
-    <td>${simBadge(c, subj)}</td></tr>`;
-  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td class="n">${num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td><td class="meta">—</td></tr>` : "";
-  return `<div class="tablewrap"><table style="min-width:1230px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft above grade</th><th class="n">Below grade</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th><th>Similar to ours</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
+    <td class="ct-photo">${compThumb(c, 48)}</td>
+    <td class="ct-addr" data-label=""><b>${mapLink(c.address)}</b><div class="meta">${esc([c.area, c.propertyType, c.style].filter(Boolean).join(" · "))}</div>${c.needsReview ? badge("Check details", "warn") : c.include === "No" ? badge("Not in estimate") : ""}</td>
+    <td data-label="Sold">${c.status === "Sold" ? (c.soldDate ? fmtShort(c.soldDate) + `<div class="meta">${c.soldDate.slice(0, 4)}${c.dom !== "" && c.dom != null ? ` · ${num(c.dom)}d` : ""}</div>` : "Sold") : esc(c.status || "")}</td>
+    <td class="n" data-label="Price"><b>${money(compPrice(c))}</b>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">${Math.round(compSlp(c) * 100)}% of list</div>` : ""}</td>
+    <td class="n" data-label="$ / sq ft">${compPpsf(c) ? money(compPpsf(c)) : dash}</td>
+    <td class="n" data-label="Beds / baths">${bedBath(c)}</td>
+    <td class="n" data-label="Sq ft above grade">${sqCell(c)}</td>
+    <td data-label="Lot">${num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(2)} ×<br>${num(c.lotDepth) ? +num(c.lotDepth).toFixed(2) : "?"} ft` : dash}</td>
+    <td data-label="Parking">${parkShort(c)}</td>
+    <td class="n" data-label="Adjusted">${compAdj(c) != null ? money(compAdj(c)) : dash}</td>
+    <td data-label="Similar to ours">${simBadge(c, subj)}</td></tr>`;
+  const subRow = subj ? `<tr class="ct-ours" data-subject>
+    <td class="ct-photo">${compThumb(subj, 48)}</td>
+    <td class="ct-addr" data-label=""><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td>
+    <td data-label="Sold">${num(subj.purchasePrice) && subj.purchaseDate ? `<span class="meta">bought ${fmtShort(subj.purchaseDate)}<br>${subj.purchaseDate.slice(0, 4)}</span>` : dash}</td>
+    <td class="n" data-label="Price">${num(subj.purchasePrice) ? `<span class="meta">paid</span><br>${money(subj.purchasePrice)}` : dash}</td>
+    <td class="n" data-label="$ / sq ft">${num(subj.purchasePrice) && (num(subj.sqftAtPurchase) || num(subj.sqft)) ? `<span class="meta">${money(num(subj.purchasePrice) / (num(subj.sqftAtPurchase) || num(subj.sqft)))}</span>` : dash}</td>
+    <td class="n" data-label="Beds / baths">${bedBath(subj)}</td>
+    <td class="n" data-label="Sq ft above grade">${sqCell(subj)}</td>
+    <td data-label="Lot">${num(subj.lotFrontage) ? `${+num(subj.lotFrontage).toFixed(2)} ×<br>${num(subj.lotDepth) ? +num(subj.lotDepth).toFixed(2) : "?"} ft` : dash}</td>
+    <td data-label="Parking">${parkShort(subj)}</td><td class="n" data-label="Adjusted">${dash}</td><td data-label="Similar to ours">${dash}</td></tr>` : "";
+  return `<div class="tablewrap ct-wrap"><table class="comptable"><thead><tr><th class="ct-photo"></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds / baths</th><th class="n">Sq ft above grade</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th><th>Similar to ours</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page. Tap an address to see it on Google Maps.</p>`;
 }
 function compColumns(list, subj){
   const cols = [...(subj ? [{...subj, __subject: true}] : []), ...list];
