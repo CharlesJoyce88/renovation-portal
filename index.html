@@ -287,6 +287,20 @@ const PHASES = ["Design","Permits","Site work","Structure","Envelope","Rough-ins
 const PHASE_COLORS = ["#7E9474","#963A2D","#B98A3E","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
 const phaseColor = p => PHASE_COLORS[Math.max(0, PHASES.indexOf(p)) % PHASE_COLORS.length];
 
+const HST_RATE = 0.13;
+const HST_EXEMPT = /permit|development charge|city of|municipal|financ|interest|mortgage|insurance|inspection fee/i;
+const r2 = n => Math.round(n * 100) / 100;
+const money2 = v => (v === "" || v == null || isNaN(+v)) ? "—" : (+v < 0 ? "−$" : "$") + Math.abs(+v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+// HST for a record: the saved amount if there is one, otherwise 13% of the base (0 for exempt items like permit fees)
+function hstOf(rec, base){
+  if(rec.hst !== undefined && rec.hst !== "" && rec.hst !== null) return num(rec.hst);
+  return HST_EXEMPT.test([rec.category, rec.item, rec.title, rec.reason].join(" ")) ? 0 : r2(num(base) * HST_RATE);
+}
+const lineTotal = b => num(b.budgeted) + hstOf(b, b.budgeted);
+const coTotal = c => num(c.costImpact) + hstOf(c, c.costImpact);
+const matBase = m => num(m.qty) * num(m.unitCost);
+const matTotal = m => matBase(m) + hstOf(m, matBase(m));
+const selTotal = x => num(x.cost) + hstOf(x, x.cost);
 const RESEARCH_TOPICS = ["Home automation","Door hardware","Lighting","Heating & cooling","Windows & doors","Insulation & energy","Kitchen","Bathroom","Flooring","Tile","Appliances","Paint & finishes","Millwork & trim","Heritage & period details","Roofing","Exterior & landscaping","Structure & engineering","Permits & regulations","Costs & financing"];
 const LABELS = ["General contractor","Designer","Architect","Engineer","Surveyor","Subcontractor","Supplier","Inspector","Lender","Other"];
 const PAY_METHODS = ["Credit card","Debit card","E-transfer","Cheque","Cash","Bank transfer / wire","Line of credit / financing","Other"];
@@ -294,7 +308,9 @@ const S = {
   quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade. Open Compare on any trade to see its quotes side by side.", fields:[
     {k:"vendor",l:"Contractor or vendor",t:"text",req:1,half:1,list:"companies"},
     {k:"trade",l:"Trade or scope (quotes with the same name are compared)",t:"text",list:"trades",half:1},
-    {k:"amount",l:"Quoted price",t:"money",half:1},
+    {k:"subtotal",l:"Price before HST",t:"money",half:1},
+    {k:"hst",l:"HST",t:"hst",base:["subtotal"],total:"amount",half:1},
+    {k:"amount",l:"Total price with HST",t:"money",half:1},
     {k:"deposit",l:"Deposit required",t:"money",half:1},
     {k:"date",l:"Date received",t:"date",half:1},
     {k:"validUntil",l:"Valid until",t:"date",half:1},
@@ -335,8 +351,8 @@ const S = {
     {k:"budgetLineId",l:"Budget line",t:"ref",half:1,src:() => data.budget.slice().sort((a, b) => (a.category || "").localeCompare(b.category || "")).map(b => [b.id, b.category + (b.item ? " — " + b.item : "")]), def: r => { const b = r.budgetLine && data.budget.find(b => lc(b.category) === lc(r.budgetLine)); return b ? b.id : ""; }},
     {k:"date",l:"Invoice date",t:"date",half:1},
     {k:"dueDate",l:"Due date",t:"date",half:1},
-    {k:"subtotal",l:"Subtotal",t:"money",half:1},
-    {k:"tax",l:"Tax (HST)",t:"money",half:1},
+    {k:"subtotal",l:"Subtotal (before HST)",t:"money",half:1},
+    {k:"tax",l:"HST",t:"hst",base:["subtotal"],total:"total",half:1},
     {k:"total",l:"Total",t:"money",req:1,half:1},
     {k:"holdback",l:"Holdback kept back (contractors: usually 10%)",t:"money",half:1},
     {k:"status",l:"Paid?",t:"select",o:["Unpaid","Partially paid","Holdback held","Paid"],half:1},
@@ -371,7 +387,8 @@ const S = {
     {k:"status",l:"Status",t:"select",o:["To decide","Shortlisted","Decided","Ordered"],half:1},
     {k:"options",l:"Options being considered",t:"textarea"},
     {k:"choice",l:"Final choice",t:"text"},
-    {k:"cost",l:"Cost",t:"money",half:1},
+    {k:"cost",l:"Cost before HST",t:"money",half:1},
+    {k:"hst",l:"HST",t:"hst",base:["cost"],showTotal:"Cost with HST",half:1},
     {k:"supplier",l:"Supplier",t:"text",half:1},
     {k:"link",l:"Product link",t:"url"},
     {k:"notes",l:"Notes",t:"textarea"},
@@ -420,6 +437,56 @@ const S = {
     {k:"files",l:"Photos, spec sheets, PDFs",t:"files"}]},
   inbox:{title:"Inbox", one:"email", blurb:"Emails sent or forwarded to your project address. File each attachment where it belongs.", fields:[
     {k:"subject",l:"Subject",t:"text"}]},
+  comps:{title:"Comparables", one:"comparable", blurb:"Recent sales near you, each with its own summary page, to help price the house when you sell.", fields:[
+    {k:"address",l:"Address",t:"text",req:1},
+    {k:"area",l:"Neighbourhood",t:"text",half:1,list:"compAreas"},
+    {k:"mls",l:"MLS® number",t:"text",half:1},
+    {k:"status",l:"Status",t:"select",o:["Sold","Active","Conditionally sold","Expired","Terminated"],half:1},
+    {k:"include",l:"Use in the price estimate?",t:"select",o:["Yes","No"],half:1},
+    {k:"soldPrice",l:"Sold price",t:"money",half:1},
+    {k:"listPrice",l:"List price",t:"money",half:1},
+    {k:"soldDate",l:"Sold date",t:"date",half:1},
+    {k:"dom",l:"Days on market",t:"number",half:1},
+    {k:"propertyType",l:"Type",t:"select",o:["Detached","Semi-detached","Row / townhouse","Link","Duplex / multiplex","Condo townhouse","Other"],half:1},
+    {k:"style",l:"Style",t:"text",half:1,list:"compStyles",ph:"e.g. 2½-storey"},
+    {k:"era",l:"Year built or era",t:"text",half:1,ph:"e.g. 1912, Edwardian"},
+    {k:"bedrooms",l:"Bedrooms",t:"text",half:1,ph:"e.g. 3+1"},
+    {k:"bathrooms",l:"Bathrooms",t:"number",half:1},
+    {k:"sqft",l:"Square feet (above grade)",t:"number",half:1},
+    {k:"sqftNote",l:"Square footage note",t:"text",half:1,ph:"e.g. MLS range 1,500–2,000"},
+    {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
+    {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
+    {k:"parking",l:"Parking spaces",t:"number",half:1},
+    {k:"garage",l:"Garage",t:"select",o:["None","Detached","Attached","Built-in","Carport","Laneway"],half:1},
+    {k:"garageSpaces",l:"Garage spaces",t:"number",half:1},
+    {k:"basement",l:"Basement",t:"text",half:1,ph:"e.g. Finished, separate entrance"},
+    {k:"taxes",l:"Property taxes (per year)",t:"money",half:1},
+    {k:"heating",l:"Heating and cooling",t:"text",half:1},
+    {k:"distance",l:"Distance from our house",t:"text",half:1,ph:"e.g. 0.4 km"},
+    {k:"similarity",l:"How similar to ours",t:"select",o:["Very similar","Similar","Somewhat similar","Not very similar"],half:1},
+    {k:"keyFeatures",l:"Key features (one per line)",t:"textarea"},
+    {k:"remarks",l:"Listing description",t:"textarea"},
+    {k:"adjustment",l:"Adjustment to match our house (+ if ours is better, − if this one is better)",t:"money",half:1},
+    {k:"notes",l:"Your notes: how it compares to ours",t:"textarea"},
+    {k:"files",l:"MLS listing sheet, photos and floor plans",t:"files"}]},
+  subject:{title:"Our house", one:"house details", blurb:"", fields:[
+    {k:"address",l:"Address",t:"text"},
+    {k:"propertyType",l:"Type",t:"select",o:["Detached","Semi-detached","Row / townhouse","Link","Duplex / multiplex","Condo townhouse","Other"],half:1},
+    {k:"style",l:"Style",t:"text",half:1,list:"compStyles"},
+    {k:"era",l:"Year built or era",t:"text",half:1},
+    {k:"bedrooms",l:"Bedrooms (after the renovation)",t:"text",half:1},
+    {k:"bathrooms",l:"Bathrooms (after the renovation)",t:"number",half:1},
+    {k:"sqft",l:"Square feet above grade (after the addition)",t:"number",half:1},
+    {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
+    {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
+    {k:"parking",l:"Parking spaces",t:"number",half:1},
+    {k:"garage",l:"Garage",t:"select",o:["None","Detached","Attached","Built-in","Carport","Laneway"],half:1},
+    {k:"garageSpaces",l:"Garage spaces",t:"number",half:1},
+    {k:"basement",l:"Basement",t:"text",half:1},
+    {k:"taxes",l:"Property taxes (per year)",t:"money",half:1},
+    {k:"keyFeatures",l:"Key features (one per line)",t:"textarea"},
+    {k:"notes",l:"Notes",t:"textarea"},
+    {k:"files",l:"Photos",t:"files"}]},
   holdbacks:{title:"Holdbacks", one:"finish date", blurb:"", fields:[
     {k:"vendor",l:"Contractor",t:"text",req:1},
     {k:"completionDate",l:"Date their work was finished",t:"date",req:1,half:1},
@@ -460,7 +527,8 @@ const S = {
     {k:"sku",l:"Model or SKU",t:"text",half:1},
     {k:"qty",l:"Quantity",t:"number",half:1},
     {k:"unit",l:"Unit",t:"text",half:1,ph:"sq ft, each, box"},
-    {k:"unitCost",l:"Cost per unit",t:"money",half:1},
+    {k:"unitCost",l:"Cost per unit (before HST)",t:"money",half:1},
+    {k:"hst",l:"HST on this item",t:"hst",base:["qty","unitCost"],showTotal:"Total with HST",half:1},
     {k:"status",l:"Status",t:"select",o:["Specified","Quoted","Ordered","Delivered","Installed"],half:1},
     {k:"leadTime",l:"Lead time",t:"text",half:1,ph:"e.g. 6 weeks"},
     {k:"needBy",l:"Needed on site by",t:"date",half:1},
@@ -470,8 +538,9 @@ const S = {
   budget:{title:"Budget", one:"line item", blurb:"Each line item's budget against what's contracted and what's been paid.", fields:[
     {k:"category",l:"Category",t:"text",req:1,list:"trades"},
     {k:"item",l:"Description",t:"text"},
-    {k:"budgeted",l:"Budgeted",t:"money",half:1},
-    {k:"committed",l:"Committed (contracted)",t:"money",half:1},
+    {k:"budgeted",l:"Budgeted (before HST)",t:"money",half:1},
+    {k:"hst",l:"HST on budget",t:"hst",base:["budgeted"],showTotal:"Budget with HST",half:1},
+    {k:"committed",l:"Committed (contract price with HST)",t:"money",half:1},
     {k:"paid",l:"Paid to date (used only if no invoices are assigned)",t:"money",half:1},
     {k:"vendor",l:"Vendor",t:"text",half:1},
     {k:"notes",l:"Notes",t:"textarea"}]},
@@ -481,7 +550,8 @@ const S = {
     {k:"title",l:"What's changing",t:"text",req:1},
     {k:"requestedBy",l:"Requested by",t:"text",half:1},
     {k:"reason",l:"Reason",t:"select",o:["Owner request","Unforeseen condition","Design change","Code requirement","Contractor error","Material substitution"],half:1},
-    {k:"costImpact",l:"Cost impact (use − for credits)",t:"money",half:1},
+    {k:"costImpact",l:"Cost impact before HST (use − for credits)",t:"money",half:1},
+    {k:"hst",l:"HST",t:"hst",base:["costImpact"],showTotal:"Total with HST",half:1},
     {k:"daysImpact",l:"Schedule impact (days)",t:"number",half:1},
     {k:"status",l:"Status",t:"select",o:["Pending","Approved","Rejected"],half:1},
     {k:"notes",l:"Details",t:"textarea"},
@@ -490,14 +560,14 @@ const S = {
 const PROJECT = {title:"Project", one:"project details", fields:[
   {k:"address",l:"Address",t:"text"},
   {k:"inboxEmail",l:"Project email address (for the Inbox)",t:"text",ph:"e.g. 98woodlawn.reno@gmail.com"},
-  {k:"budget",l:"Total budget",t:"money",half:1},
+  {k:"budget",l:"Total budget (with HST)",t:"money",half:1},
   {k:"contingency",l:"Contingency (%)",t:"number",half:1},
   {k:"start",l:"Start date",t:"date",half:1},
   {k:"end",l:"Target completion",t:"date",half:1},
   {k:"notes",l:"Scope summary",t:"textarea"}]};
 const COLS = Object.keys(S);
-const NAV_NAMES = ["", "Planning", "Money", "The build", "People", "Reference"];
-const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["inbox","contacts","conversations","documents"],["research","warranties"]];
+const NAV_NAMES = ["", "Planning", "Money", "The build", "People", "Reference", "Selling"];
+const NAV = [["overview"],["tasks","permits","selections","plans"],["budget","invoices","quotes","changeOrders"],["photos","punch","materials"],["inbox","contacts","conversations","documents"],["research","warranties"],["comps"]];
 const VIEWS = NAV.flat();
 
 // ---------- Supabase settings: paste your project's values here ----------
@@ -515,7 +585,8 @@ const data = Object.fromEntries(COLS.map(c => [c, []]));
 let project = {}, projectId = null;
 let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
 let compareTrade = null;
-const filters = {inbox:"New", photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
+let compDetail = null, compLayout = "rows", compSort = "date";
+const filters = {comps:"Sold", inbox:"New", photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
 
 // ---------- persistence ----------
@@ -647,7 +718,7 @@ function render(){
   $("#tabs").hidden = !!gate; $("#navSelect").hidden = !!gate;
   if(gate){ m.innerHTML = gate; return; }
   let banner = "";
-  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, inbox:vInbox, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, contacts:vContacts, conversations:vConversations}[view];
+  const fn = {overview:vOverview, tasks:vTimeline, quotes:vQuotes, budget:vBudget, invoices:vInvoices, changeOrders:vChangeOrders, materials:vMaterials, plans:vPlans, inbox:vInbox, permits:vPermits, photos:vPhotos, selections:vSelections, punch:vPunch, documents:vDocuments, warranties:vWarranties, research:vResearch, comps:vComps, contacts:vContacts, conversations:vConversations}[view];
   m.innerHTML = banner + fn();
 }
 
@@ -674,9 +745,9 @@ const statusKind = s => ({Passed:"good",Issued:"good",Decided:"good",Closed:"goo
 
 // ---- Overview ----
 function money3(){
-  const lineBudget = sum(data.budget, b => b.budgeted);
+  const lineBudget = sum(data.budget, lineTotal);
   const budget = num(project.budget) || lineBudget;
-  const coApproved = sum(data.changeOrders.filter(c => c.status === "Approved"), c => c.costImpact);
+  const coApproved = sum(data.changeOrders.filter(c => c.status === "Approved"), coTotal);
   const committed = sum(data.budget, b => b.committed) + coApproved;
   const paid = data.invoices.length ? sum(data.invoices, invPaid) : sum(data.budget, b => b.paid);
   return {budget, lineBudget, coApproved, committed, paid};
@@ -783,13 +854,14 @@ function vTimeline(){
 }
 
 // ---- Quotes ----
+function quoteUploadBtn(){ return canWrite ? `<label class="btn" style="cursor:pointer">Upload a quote<input type="file" id="quoteUpload" accept=".pdf,application/pdf,image/*" multiple hidden></label>` : ""; }
 function vQuotes(){
   if(compareTrade && data.quotes.some(q => (q.trade || "Other") === compareTrade)) return vCompare(compareTrade);
-  if(!data.quotes.length) return head("quotes") + empty("quotes", "No quotes yet", "Add each bid as it comes in and attach the PDF or photo of the quote.");
+  if(!data.quotes.length) return head("quotes", quoteUploadBtn()) + empty("quotes", "No quotes yet", "Upload each quote as it comes in. For PDF quotes, the final price, deposit and valid-until date are read for you to check.", quoteUploadBtn());
   const groups = {};
   data.quotes.forEach(q => (groups[q.trade || "Other"] ||= []).push(q));
   const accepted = sum(data.quotes.filter(q => q.status === "Accepted"), q => q.amount);
-  return head("quotes") + `<p class="meta" style="margin-top:-6px">${data.quotes.length} quotes across ${Object.keys(groups).length} trades. Accepted total ${money(accepted)}.</p>` +
+  return head("quotes", quoteUploadBtn()) + `<p class="meta" style="margin-top:-6px">${data.quotes.length} quotes across ${Object.keys(groups).length} trades. Accepted total ${money(accepted)}.</p>` +
     Object.keys(groups).sort().map(g => {
       const qs = groups[g].sort((a, b) => num(a.amount) - num(b.amount));
       const priced = qs.filter(q => num(q.amount) > 0 && q.status !== "Declined");
@@ -797,7 +869,7 @@ function vQuotes(){
       return `<div class="group"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(g)} <span class="meta" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px">${qs.length} quote${qs.length > 1 ? "s" : ""}${priced.length > 1 ? ` · spread ${money(num(high.amount) - num(low.amount))}` : ""}</span></h3>${qs.length > 1 ? `<button class="btn primary" data-compare="${esc(g)}">Compare ${qs.length} quotes</button>` : ""}</div><div class="grid">${qs.map(q => `
         <div class="card" data-edit="quotes" data-id="${esc(q.id)}" tabindex="0" role="button">
           <div class="row" style="justify-content:space-between"><h3>${esc(q.vendor)}</h3>${badge(q.status || "Received", statusKind(q.status))}</div>
-          <div class="amount">${money(q.amount)}</div>
+          <div class="amount">${money(q.amount)}</div>${num(q.subtotal) ? `<div class="meta">${money(q.subtotal)} + ${money(q.hst)} HST</div>` : ""}
           <div class="meta">${q.date ? "Received " + fmtDate(q.date) : ""}${q.validUntil ? ` · valid until ${fmtDate(q.validUntil)}` : ""}${priced.length > 1 && q === low ? ` · <b class="pos">lowest</b>` : ""}</div>
           ${q.startDate || q.duration ? `<div class="meta">${esc([q.startDate && "Can start " + fmtDate(q.startDate), q.duration].filter(Boolean).join(" · "))}</div>` : ""}
           ${q.rating ? `<div class="meta">Your rating: ${esc(q.rating)}</div>` : ""}
@@ -826,7 +898,7 @@ function vCompare(trade){
   const txt = v => v ? `<div style="white-space:pre-wrap">${esc(v)}</div>` : ns;
   const isLow = q => live.length > 1 && q.status !== "Declined" && num(q.amount) === low;
   const rows = [
-    ["Quoted price", q => num(q.amount) ? `<span class="amount" style="font-size:24px">${money(q.amount)}</span>${isLow(q) ? `<div class="pos">Lowest</div>` : (low && q.status !== "Declined" && num(q.amount) > low ? `<div class="meta">${money(num(q.amount) - low)} more (${Math.round((num(q.amount) - low) / low * 100)}%)</div>` : "")}` : ns, isLow],
+    ["Price with HST", q => num(q.amount) ? `<span class="amount" style="font-size:24px">${money(q.amount)}</span>${num(q.subtotal) ? `<div class="meta">${money(q.subtotal)} before HST + ${money(q.hst)} HST</div>` : ""}${isLow(q) ? `<div class="pos">Lowest</div>` : (low && q.status !== "Declined" && num(q.amount) > low ? `<div class="meta">${money(num(q.amount) - low)} more (${Math.round((num(q.amount) - low) / low * 100)}%)</div>` : "")}` : ns, isLow],
     ["Status", q => badge(q.status || "Received", statusKind(q.status))],
     ["Deposit", q => (q.deposit !== "" && q.deposit != null) ? money(q.deposit) + (num(q.amount) ? ` <span class="meta">(${Math.round(num(q.deposit) / num(q.amount) * 100)}% of price)</span>` : "") : ns],
     ["Valid until", q => q.validUntil ? (q.validUntil < t ? `<span class="neg">Expired ${fmtDate(q.validUntil)}</span>` : fmtDate(q.validUntil)) : ns],
@@ -880,24 +952,24 @@ function vBudget(){
   const inv = id => data.invoices.filter(x => { const l = lineFor(x); return l && l.id === id; });
   const calc = r => { const xs = inv(r.id); return {n: xs.length, invoiced: sum(xs, x => x.total), paid: xs.length ? sum(xs, invPaid) : num(r.paid)}; };
   const body = rows.map(r => {
-    const c = calc(r), spent = Math.max(num(r.committed), c.invoiced), variance = num(r.budgeted) - spent;
+    const c = calc(r), spent = Math.max(num(r.committed), c.invoiced), variance = lineTotal(r) - spent;
     return `<tr data-edit="budget" data-id="${esc(r.id)}"><td>${esc(r.category)}</td><td>${esc(r.item || "")}<div class="meta">${esc(r.vendor || "")}</div></td>
-      <td class="n">${money(r.budgeted)}</td><td class="n">${money(r.committed)}</td><td class="n">${c.n ? money(c.invoiced) + `<div class="meta">${c.n} invoice${c.n > 1 ? "s" : ""}</div>` : "—"}</td><td class="n">${money(c.paid)}</td>
+      <td class="n">${money(r.budgeted)}</td><td class="n">${money(hstOf(r, r.budgeted))}</td><td class="n">${money(lineTotal(r))}</td><td class="n">${money(r.committed)}</td><td class="n">${c.n ? money(c.invoiced) + `<div class="meta">${c.n} invoice${c.n > 1 ? "s" : ""}</div>` : "—"}</td><td class="n">${money(c.paid)}</td>
       <td class="n ${spent ? (variance < 0 ? "neg" : "pos") : ""}">${spent ? money(variance) : "—"}</td></tr>`;
   }).join("");
   const unassigned = data.invoices.filter(x => !lineFor(x));
-  const unRow = unassigned.length ? `<tr data-view="invoices"><td>Not assigned</td><td class="meta">Invoices without a budget line. Open one in Expenses to assign it.</td><td class="n">—</td><td class="n">—</td><td class="n">${money(sum(unassigned, x => x.total))}<div class="meta">${unassigned.length} invoice${unassigned.length > 1 ? "s" : ""}</div></td><td class="n">${money(sum(unassigned, invPaid))}</td><td class="n">—</td></tr>` : "";
-  const coRow = data.changeOrders.length ? `<tr data-view="changeOrders"><td>Change orders</td><td class="meta">Approved only</td><td class="n">—</td><td class="n">${money(coApproved)}</td><td class="n">—</td><td class="n">—</td><td class="n ${coApproved > 0 ? "neg" : ""}">${money(-coApproved)}</td></tr>` : "";
-  const tb = sum(rows, r => r.budgeted), tc = sum(rows, r => r.committed) + coApproved;
+  const unRow = unassigned.length ? `<tr data-view="invoices"><td>Not assigned</td><td class="meta">Invoices without a budget line. Open one in Expenses to assign it.</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">${money(sum(unassigned, x => x.total))}<div class="meta">${unassigned.length} invoice${unassigned.length > 1 ? "s" : ""}</div></td><td class="n">${money(sum(unassigned, invPaid))}</td><td class="n">—</td></tr>` : "";
+  const coRow = data.changeOrders.length ? `<tr data-view="changeOrders"><td>Change orders</td><td class="meta">Approved only, with HST</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">${money(coApproved)}</td><td class="n">—</td><td class="n">—</td><td class="n ${coApproved > 0 ? "neg" : ""}">${money(-coApproved)}</td></tr>` : "";
+  const tbBase = sum(rows, r => r.budgeted), tbHst = sum(rows, r => hstOf(r, r.budgeted)), tb = sum(rows, lineTotal), tc = sum(rows, r => r.committed) + coApproved;
   const ti = sum(rows, r => calc(r).invoiced) + sum(unassigned, x => x.total), tp = sum(rows, r => calc(r).paid) + sum(unassigned, invPaid);
   const contingency = num(project.contingency) ? `<p class="meta">Contingency set at ${num(project.contingency)}% (${money((num(project.budget) || tb) * num(project.contingency) / 100)}) of the total budget.</p>` : "";
   return head("budget") + `
     ${num(project.budget) && Math.abs(num(project.budget) - tb) > 1 ? `<p class="banner">Line items add up to ${money(tb)}; your total project budget is ${money(project.budget)}.</p>` : ""}
     <div class="tablewrap"><table>
-      <thead><tr><th>Category</th><th>Description</th><th class="n">Budgeted</th><th class="n">Committed</th><th class="n">Invoiced</th><th class="n">Paid</th><th class="n">Variance</th></tr></thead>
+      <thead><tr><th>Category</th><th>Description</th><th class="n">Budget before HST</th><th class="n">HST</th><th class="n">Budget with HST</th><th class="n">Committed</th><th class="n">Invoiced</th><th class="n">Paid</th><th class="n">Variance</th></tr></thead>
       <tbody>${body}${unRow}${coRow}</tbody>
-      <tfoot><tr><td colspan="2">Total</td><td class="n">${money(tb)}</td><td class="n">${money(tc)}</td><td class="n">${money(ti)}</td><td class="n">${money(tp)}</td><td class="n ${tb - Math.max(tc, ti) < 0 ? "neg" : "pos"}">${money(tb - Math.max(tc, ti))}</td></tr></tfoot>
-    </table></div>${contingency}<p class="meta">Invoiced and Paid come from the invoices assigned to each line in Expenses. Lines with no invoices use the Paid amount you enter. Variance is budgeted minus whichever is higher, committed or invoiced. Tap a row to edit.</p>`;
+      <tfoot><tr><td colspan="2">Total</td><td class="n">${money(tbBase)}</td><td class="n">${money(tbHst)}</td><td class="n">${money(tb)}</td><td class="n">${money(tc)}</td><td class="n">${money(ti)}</td><td class="n">${money(tp)}</td><td class="n ${tb - Math.max(tc, ti) < 0 ? "neg" : "pos"}">${money(tb - Math.max(tc, ti))}</td></tr></tfoot>
+    </table></div>${contingency}<p class="meta">Invoiced and Paid come from the invoices assigned to each line in Expenses. Lines with no invoices use the Paid amount you enter. All comparisons use amounts with HST: variance is the budget with HST minus whichever is higher, committed or invoiced. HST is 13% unless you change it on a line; permit and financing lines default to no HST. Tap a row to edit.</p>`;
 }
 
 // ---- Change orders ----
@@ -905,11 +977,11 @@ function vChangeOrders(){
   if(!data.changeOrders.length) return head("changeOrders") + empty("changeOrders", "No change orders", "When scope, price or schedule changes after a contract is signed, record it here with the signed paperwork.");
   const list = data.changeOrders.slice().sort((a, b) => (b.number || "").localeCompare(a.number || "", undefined, {numeric:true}));
   const ap = list.filter(c => c.status === "Approved"), pe = list.filter(c => c.status === "Pending");
-  return head("changeOrders") + `<p class="meta" style="margin-top:-6px">Approved: ${money(sum(ap, c => c.costImpact))} and ${sum(ap, c => c.daysImpact)} days. Pending: ${money(sum(pe, c => c.costImpact))} and ${sum(pe, c => c.daysImpact)} days.</p>
+  return head("changeOrders") + `<p class="meta" style="margin-top:-6px">Approved: ${money(sum(ap, coTotal))} with HST and ${sum(ap, c => c.daysImpact)} days. Pending: ${money(sum(pe, coTotal))} with HST and ${sum(pe, c => c.daysImpact)} days.</p>
     <div class="grid">${list.map(c => `<div class="card" data-edit="changeOrders" data-id="${esc(c.id)}" tabindex="0" role="button">
       <div class="row" style="justify-content:space-between"><span class="meta">${esc(c.number || "")}${c.date ? " · " + fmtDate(c.date) : ""}</span>${badge(c.status || "Pending", statusKind(c.status || "Pending"))}</div>
       <h3>${esc(c.title)}</h3>
-      <div class="row" style="gap:16px"><span class="amount ${num(c.costImpact) < 0 ? "pos" : ""}">${num(c.costImpact) > 0 ? "+" : ""}${money(c.costImpact)}</span>${num(c.daysImpact) ? `<span class="meta">${num(c.daysImpact) > 0 ? "+" : ""}${num(c.daysImpact)} days</span>` : ""}</div>
+      <div class="row" style="gap:16px"><span class="amount ${num(c.costImpact) < 0 ? "pos" : ""}">${coTotal(c) > 0 ? "+" : ""}${money(coTotal(c))}</span><span class="meta">${money(c.costImpact)} + ${money(hstOf(c, c.costImpact))} HST</span>${num(c.daysImpact) ? `<span class="meta">${num(c.daysImpact) > 0 ? "+" : ""}${num(c.daysImpact)} days</span>` : ""}</div>
       <div class="meta">${esc([c.reason, c.requestedBy && "requested by " + c.requestedBy].filter(Boolean).join(", "))}</div>
       ${c.notes ? `<p class="notes">${esc(c.notes)}</p>` : ""}${filesHTML(c.files)}</div>`).join("")}</div>`;
 }
@@ -923,13 +995,13 @@ function vMaterials(){
   const cats = [...new Set(data.materials.map(m => m.category || "Other"))].sort();
   const list = data.materials.filter(m => filters.materials === "All" || (m.category || "Other") === filters.materials)
     .sort((a, b) => (a.category || "").localeCompare(b.category || "") || (a.item || "").localeCompare(b.item || ""));
-  const total = sum(list, m => num(m.qty) * num(m.unitCost));
-  return head("materials") + chips("materials", cats) + `<p class="meta" style="margin-top:-4px">${list.length} items, ${money(total)} total.</p>
+  const total = sum(list, matTotal);
+  return head("materials") + chips("materials", cats) + `<p class="meta" style="margin-top:-4px">${list.length} items, ${money(total)} total with HST.</p>
     <div class="grid">${list.map(m => `<div class="card" data-edit="materials" data-id="${esc(m.id)}" tabindex="0" role="button">
       <div class="row" style="justify-content:space-between"><span class="meta">${esc(m.category || "")}${m.room ? " · " + esc(m.room) : ""}</span>${badge(m.status || "Specified", statusKind(m.status))}</div>
       <h3>${esc(m.item)}</h3>
       <div class="meta">${esc([m.supplier, m.sku].filter(Boolean).join(" · "))}</div>
-      <div class="row" style="justify-content:space-between;margin-top:4px"><span>${m.qty ? esc(m.qty + " " + (m.unit || "")) + (m.unitCost ? " × " + money(m.unitCost) : "") : ""}</span><span class="amount">${num(m.qty) && num(m.unitCost) ? money(num(m.qty) * num(m.unitCost)) : ""}</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:4px"><span>${m.qty ? esc(m.qty + " " + (m.unit || "")) + (m.unitCost ? " × " + money(m.unitCost) : "") : ""}</span><span class="amount">${num(m.qty) && num(m.unitCost) ? money(matTotal(m)) : ""}</span></div>
       ${m.leadTime || m.needBy ? `<div class="meta">${m.leadTime ? "Lead time " + esc(m.leadTime) : ""}${m.leadTime && m.needBy ? " · " : ""}${m.needBy ? "need by " + fmtDate(m.needBy) : ""}</div>` : ""}
       ${firstImage(m.files)}${m.link ? `<div class="files"><a class="file" href="${esc(m.link)}" target="_blank" rel="noopener" data-stop>🔗<span>Product page</span></a></div>` : ""}${filesHTML((m.files || []).filter(f => !(f.type || "").startsWith("image/")))}</div>`).join("")}</div>`;
 }
@@ -1135,6 +1207,58 @@ function afterLabel(lines, re, getter, skip){
   }
   return null;
 }
+function matchVendor(lines){
+  const lt = lines.join("\n").toLowerCase();
+  let co = data.companies.find(c => c.name && lt.includes(lc(c.name)))
+    || data.companies.find(c => c.website && lt.includes(lc(c.website).replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0]));
+  let k = null;
+  if(!co){ k = data.contacts.find(x => x.email && lt.includes(lc(x.email))) || data.contacts.find(x => x.company && lt.includes(lc(x.company))); if(k) co = companyOf(k); }
+  if(co) return {vendor: co.name, label: co.label || (data.contacts.find(x => x.companyId === co.id) || {}).label || ""};
+  if(k) return {vendor: k.company || k.name, label: k.label || ""};
+  const cand = lines.slice(0, 8).find(l => /[a-z]{3}/i.test(l) && !/quot|estimate|proposal|invoice|prepared\s+for|bill\s+to|page\s+\d|^date|^to\b|^from\b|@|\d{3}[\s.\-]\d{4}/i.test(l) && l.split(/\s+/).length <= 7);
+  return {vendor: cand ? cand.replace(/\s{2,}.*/, "") : "", label: "", guessed: true};
+}
+function parseQuote(lines){
+  const out = {};
+  const text = lines.join("\n");
+  const lastAmt = s => { const a = amounts(s).filter(n => n > 0); return a.length ? a[a.length - 1] : null; };
+  const findLast = (re, skip) => {
+    for(let i = lines.length - 1; i >= 0; i--){
+      if(!re.test(lines[i]) || (skip && skip.test(lines[i]))) continue;
+      const v = lastAmt(lines[i].slice(lines[i].search(re))) || (lines[i + 1] ? lastAmt(lines[i + 1]) : null);
+      if(v) return v;
+    }
+    return null;
+  };
+  const strong = /grand\s+total|total\s+(?:contract\s+)?(?:price|cost|amount|estimate|quote|quotation|investment|project|due|payable)|contract\s+(?:price|sum|amount|total)|quot(?:e|ation|ed)\s+(?:price|amount|total)|estimated?\s+total|project\s+total|total\s+(?:incl|including|with)|final\s+(?:price|total|amount)|amount\s+due/i;
+  out.amount = findLast(strong, /sub[\s-]?total/i) || findLast(/\btotal\b/i, /sub[\s-]?total|total\s+tax|tax\s+total/i);
+  if(!out.amount){ const all = amounts(text).filter(n => n > 0); if(all.length) out.amount = Math.max(...all); }
+  const subtotal = afterLabel(lines, /sub[\s-]?total/i, lastAmt) || "";
+  let tax = afterLabel(lines, /\b(h\.?s\.?t|g\.?s\.?t|p\.?s\.?t|sales\s+tax|tax)\b/i, lastAmt, /\btotal\b(?!\s+tax)|tax\s+(id|number|no|registration|#)|registration|business\s+(no|number)|\bbn\b/i) || "";
+  if(tax && out.amount && tax >= out.amount) tax = "";
+  out.__includesTax = !!(tax && subtotal && Math.abs(num(subtotal) + num(tax) - num(out.amount)) < 1) || /incl(?:uding|udes|\.)?\s+(?:hst|tax)/i.test(text);
+  out.__plusTax = !out.__includesTax && /(plus|\+)\s*(hst|tax|applicable\s+tax)|(hst|taxes?)\s+(extra|not\s+included|excluded|additional)/i.test(text);
+  out.deposit = afterLabel(lines, /deposit|down\s*payment|retainer|upon\s+signing/i, s => { const a = lastAmt(s); if(a && (!out.amount || a < out.amount)) return a; const pc = s.match(/(\d{1,2}(?:\.\d)?)\s?%/); return pc && out.amount ? Math.round(out.amount * parseFloat(pc[1])) / 100 : null; }) || "";
+  out.date = afterLabel(lines, /(?:quote|quotation|estimate|proposal)\s+date|date\s+(?:issued|of\s+quote)|^\s*date\b|dated/i, findDate) || findDate(text) || "";
+  out.validUntil = afterLabel(lines, /valid\s+(?:until|through|thru|to)|expir(?:es|y|ation)/i, findDate) || "";
+  if(!out.validUntil){ const m = text.match(/valid\s+for\s+(\d{1,3})\s+days/i); if(m && out.date) out.validUntil = addDays(out.date, +m[1]); }
+  if(out.amount){
+    if(out.__includesTax){ out.subtotal = num(subtotal) || r2(out.amount / (1 + HST_RATE)); out.hst = num(tax) || r2(out.amount - out.subtotal); }
+    else { out.subtotal = out.amount; out.hst = r2(out.amount * HST_RATE); out.amount = r2(out.subtotal + out.hst); }
+  }
+  const v = matchVendor(lines); if(v.vendor) out.vendor = v.vendor; out.__vendorGuessed = !!v.guessed; if(v.label) out.trade = v.label === "Other" || v.label === "Supplier" ? "" : v.label;
+  return out;
+}
+function quoteNote(q, fileName){
+  if(!q || !q.amount) return `Couldn't find a price in ${fileName || "the PDF"}. If it's a scanned or photographed quote, enter the price yourself.`;
+  const how = q.__includesTax ? "The quote includes HST." : q.__plusTax ? "The quote says HST is extra, so 13% has been added." : "The quote doesn't mention tax, so the price is assumed to be before HST and 13% has been added. Adjust it if the quote already includes tax.";
+  return `Price read from ${fileName || "the PDF"}: ${money2(q.subtotal)} before HST + ${money2(q.hst)} HST = ${money2(q.amount)} total. ${how} Please check it against the quote${q.validUntil ? `. Valid until ${fmtDate(q.validUntil)}` : ""}.`;
+}
+async function readQuoteFile(fileOrBlob, name){
+  if(!/pdf/i.test(fileOrBlob.type || "") && !/\.pdf$/i.test(name || "")) return null;
+  try { const lines = await pdfLines(fileOrBlob instanceof File ? fileOrBlob : new File([fileOrBlob], name || "quote.pdf", {type: "application/pdf"})); return lines.length > 2 ? parseQuote(lines) : {}; } catch(e){ return {}; }
+}
+
 function parseInvoice(lines, fileName){
   const out = {};
   const text = lines.join("\n"), lt = text.toLowerCase();
@@ -1289,6 +1413,23 @@ function openMarkPaid(x){
   dlg.showModal();
 }
 
+async function handleQuoteUpload(files){
+  if(!files.length) return;
+  const recs = []; let q = null, readFrom = "";
+  for(let i = 0; i < files.length; i++){
+    const f = files[i];
+    if(f.size > MAX_MB * 1024 * 1024){ toast(`${f.name} is over ${MAX_MB} MB.`); continue; }
+    toast(files.length > 1 ? `Uploading ${i + 1} of ${files.length}…` : "Reading the quote…");
+    if(!q){ const r = await readQuoteFile(f, f.name); if(r && r.amount){ q = r; readFrom = f.name; } else if(r && !readFrom){ readFrom = f.name; } }
+    try { recs.push(await uploadToStorage(f)); } catch(e){ toast(`${f.name} didn't upload.`); }
+  }
+  if(!recs.length) return;
+  const preset = {status: "Received", date: todayISO(), ...(q || {}), files: recs, __newFiles: recs, __note: readFrom ? quoteNote(q, readFrom) : "This looks like a photo or scan, so enter the price from the quote yourself."};
+  if(compareTrade && !preset.trade) preset.trade = compareTrade;
+  if(q && q.__vendorGuessed && !q.vendor) delete preset.vendor;
+  openForm("quotes", null, preset);
+}
+
 function exportInvoices(){
   const cols = [["date","Invoice date"],["vendor","Vendor"],["invoiceNumber","Invoice #"],["category","Category"],["budgetLine","Budget line"],["holdback","Holdback"],["held","Holdback still held"],["subtotal","Subtotal"],["tax","Tax"],["total","Total"],["status","Status"],["paid","Paid"],["owing","Owing"],["dueDate","Due date"],["paidDate","Date paid"],["paymentMethod","Payment method"],["paymentRef","Reference"],["notes","Notes"]];
   const q = v => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
@@ -1380,7 +1521,7 @@ function vSelections(){
   const card = x => `<div class="card" data-edit="selections" data-id="${esc(x.id)}" tabindex="0" role="button">
     <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start"><div><span class="meta">${esc([x.room, x.category].filter(Boolean).join(" · "))}</span><h3>${esc(x.item)}</h3></div>${badge(x.status || "To decide", statusKind(x.status))}</div>
     ${x.decideBy && open.includes(x) ? `<div class="${x.decideBy < t ? "neg" : "meta"}">${x.decideBy < t ? "Overdue: was due " : "Decide by "}${fmtDate(x.decideBy)}</div>` : ""}
-    ${x.choice ? `<p class="notes"><b>Chosen:</b> ${esc(x.choice)}${x.cost ? ` · ${money(x.cost)}` : ""}${x.supplier ? ` · ${esc(x.supplier)}` : ""}</p>` : x.options ? `<p class="notes meta">${esc(x.options)}</p>` : ""}
+    ${x.choice ? `<p class="notes"><b>Chosen:</b> ${esc(x.choice)}${x.cost ? ` · ${money(selTotal(x))} with HST` : ""}${x.supplier ? ` · ${esc(x.supplier)}` : ""}</p>` : x.options ? `<p class="notes meta">${esc(x.options)}</p>` : ""}
     ${firstImage(x.files)}
     ${!open.includes(x) && canWrite ? (x.materialId ? `<p class="meta" style="margin:8px 0 0">Added to Materials</p>` : `<button class="btn" style="margin-top:8px" data-tomaterial="${esc(x.id)}">Add to materials</button>`) : ""}
   </div>`;
@@ -1390,7 +1531,7 @@ function vSelections(){
 }
 async function selectionToMaterial(id){
   const x = data.selections.find(s => s.id === id); if(!x) return;
-  const mid = await insertOne("materials", {item: x.choice || x.item, category: x.category || "", room: x.room || "", supplier: x.supplier || "", sku: "", qty: 1, unit: "", unitCost: x.cost || "", status: x.status === "Ordered" ? "Ordered" : "Specified", leadTime: "", needBy: "", link: x.link || "", notes: "From selection: " + x.item, files: x.files || [], created: Date.now(), updated: Date.now()});
+  const mid = await insertOne("materials", {item: x.choice || x.item, category: x.category || "", room: x.room || "", supplier: x.supplier || "", sku: "", qty: 1, unit: "", unitCost: x.cost || "", hst: x.hst ?? "", status: x.status === "Ordered" ? "Ordered" : "Specified", leadTime: "", needBy: "", link: x.link || "", notes: "From selection: " + x.item, files: x.files || [], created: Date.now(), updated: Date.now()});
   const {id: _i, ...rest} = x;
   await save("selections", id, {...rest, materialId: mid, updated: Date.now()});
   toast("Added to Materials. Open it there to set the quantity.");
@@ -1532,6 +1673,290 @@ function openReader(id){
   dlg.showModal();
 }
 
+// ---- Comparables ----
+const median = a => { if(!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const pctl = (a, p) => { if(!a.length) return null; const s = a.slice().sort((x, y) => x - y), i = (s.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+const compPrice = c => num(c.soldPrice) || num(c.listPrice);
+const compPpsf = c => num(c.sqft) && compPrice(c) ? compPrice(c) / num(c.sqft) : null;
+const compSlp = c => num(c.soldPrice) && num(c.listPrice) ? num(c.soldPrice) / num(c.listPrice) : null;
+const compAdj = c => (c.adjustment !== "" && c.adjustment != null && num(c.soldPrice)) ? num(c.soldPrice) + num(c.adjustment) : null;
+const inEstimate = c => c.status === "Sold" && c.include !== "No" && num(c.soldPrice) > 0;
+const isPdfFile = f => /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || "");
+const isImgFile = f => (f.type || "").startsWith("image/");
+const compFileKind = f => f.kind || (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo");
+const compPhotos = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) !== "floor");
+const compFloors = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "floor");
+const lotText = c => num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(1)} × ${num(c.lotDepth) ? +num(c.lotDepth).toFixed(1) : "?"} ft` : "";
+const parkText = c => [num(c.parking) ? `${num(c.parking)} space${num(c.parking) > 1 ? "s" : ""}` : (c.parking === 0 ? "No parking" : ""), c.garage && c.garage !== "None" ? `${c.garage.toLowerCase()} garage${num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : ""}` : (c.garage === "None" ? "no garage" : "")].filter(Boolean).join(", ");
+function compThumb(c, h){
+  const p = compPhotos(c)[0]; const u = p && fileUrl(p.path);
+  return u && u !== "#" ? `<img src="${esc(u)}" alt="" loading="lazy" style="width:100%;height:${h}px;object-fit:cover;display:block;border-radius:2px">` : `<div style="height:${h}px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:2px;font-size:${Math.round(h / 3)}px" aria-hidden="true">🏠</div>`;
+}
+
+const FEATURE_WORDS = [["Renovated", /renovat|re-?done|fully updated|gut(ted)?\b/i], ["Addition", /\baddition\b/i], ["Finished basement", /finished\s+(lower|basement)|basement\s+(is\s+)?finished/i], ["Separate entrance", /separate\s+(side\s+)?entrance/i], ["Basement apartment or income suite", /(basement|lower)[\s-]+(apartment|suite|unit)|income|in-?law|nanny\s+suite|legal\s+(duplex|second|2nd)/i], ["Laneway or garden suite", /laneway\s+(house|suite)|garden\s+suite/i], ["Parking", /\bparking\b|private\s+drive/i], ["Garage", /garage/i], ["Original period details", /original\s+(details|trim|millwork|woodwork|mouldings?|doors?|floors?)|stained\s+glass|leaded\s+glass|period\s+details|character/i], ["Fireplace", /fireplace/i], ["Hardwood floors", /hardwood/i], ["Updated kitchen", /(chef'?s|custom|new|updated|renovated|gourmet)\s+kitchen|kitchen\s+(reno|renovat)/i], ["Primary ensuite", /ensuite|en-suite/i], ["Walk-out", /walk-?\s?out/i], ["Deck or patio", /\bdeck\b|patio|terrace/i], ["Large or south-facing garden", /(south|west)[\s-]+facing|deep\s+lot|large\s+(garden|yard|backyard)|private\s+(garden|yard|backyard)/i], ["Central air", /central\s+(air|a\/?c)|\bcac\b/i], ["Heat pump", /heat\s+pump/i], ["Heated floors", /heated\s+floors?|radiant/i], ["Skylights", /skylight/i], ["High ceilings", /high\s+ceilings?|\d+['’]\s*ceilings?|soaring/i], ["Third-floor retreat", /third[\s-]floor|3rd\s+floor/i], ["Pot lights", /pot\s+lights?/i], ["EV charger", /\bev\b\s+charg|electric\s+vehicle/i], ["Walk to transit", /subway|ttc|go\s+station|streetcar|transit/i], ["Top school district", /school/i]];
+
+function parseListing(raw){
+  const text = String(raw || "").replace(/\r/g, "");
+  const flat = text.replace(/[ \t]+/g, " ");
+  const out = {};
+  const grab = re => { const m = flat.match(re); return m ? String(m[1]).trim() : ""; };
+  const grabT = re => { const m = text.match(re); return m ? String(m[1]).trim() : ""; };
+  const numOf = v => { if(v === "" || v == null) return ""; const n = parseFloat(String(v).replace(/[^\d.]/g, "")); return isNaN(n) ? "" : n; };
+  const priceOf = re => { const m = flat.match(re); if(!m) return ""; const n = +m[1].replace(/[^\d]/g, ""); return n >= 50000 ? n : ""; };
+  const stop = String.raw`(?=\s{2,}|\n|$)`;
+  out.mls = grab(/MLS(?:®)?\s*(?:#|no\.?|number)?\s*[:#]?\s*([A-Z]{0,2}\d{6,9})\b/i);
+  out.soldPrice = priceOf(/\b(?:Sold\s+Price|Sale\s+Price|Sold\s+for|Sold|SP)\s*[:\-]?\s*\$\s?([\d,]{5,})/i) || priceOf(/\bSold(?:\s+Price)?\s*[:\-]\s*([\d,]{6,})/i);
+  out.listPrice = priceOf(/\b(?:List(?:ing)?\s+Price|Asking(?:\s+Price)?|Listed\s+(?:at|for)|Original\s+Price|LP)\s*[:\-]?\s*\$?\s?([\d,]{5,})/i) || priceOf(/\bList\s*[:\-]?\s*\$\s?([\d,]{5,})/i);
+  const sd = flat.match(/\b(?:Sold|Closing|Closed|Contract|Sale)\s+Date\s*[:\-]?\s*([^\n]{0,32})/i) || flat.match(/\bSold\s+(?:on\s+)?([A-Z][a-z]{2,8}\.?\s+\d{1,2},?\s+20\d\d)/);
+  if(sd) out.soldDate = findDate(sd[1]);
+  out.dom = numOf(grab(/\b(?:DOM|Days\s+on\s+Market)\s*[:\-]?\s*(\d{1,4})/i));
+  out.bedrooms = (grab(/\b(?:Bedrooms?|Beds?|Bdrms?|Bed\s+Rooms?)\s*:\s*(\d{1,2}(?:\s*\+\s*\d)?)\b/i) || grab(/\b(\d{1,2}(?:\s*\+\s*\d)?)\s*(?:Bedrooms?|Beds?|Bdrms?)\b/i) || grab(/\b(?:Bedrooms?|Beds?|Bdrms?)\s+(\d{1,2}(?:\s*\+\s*\d)?)\b/i)).replace(/\s+/g, "");
+  out.bathrooms = numOf(grab(/\b(?:Washrooms?|Bathrooms?|Baths?|Wshrms?)\s*:\s*(\d{1,2}(?:\.\d)?)\b/i) || grab(/\b(\d{1,2}(?:\.\d)?)\s*(?:Washrooms?|Bathrooms?|Baths?)\b/i) || grab(/\b(?:Washrooms?|Bathrooms?|Baths?)\s+(\d{1,2}(?:\.\d)?)\b/i));
+  const sq = flat.match(/(?:Approx\.?\s*)?(?:Square\s*F(?:ee|oo)t(?:age)?|Sq\.?\s*F(?:ee)?t\.?|SqFt|Living\s+Area|Size)\s*(?:\(\s*sq\.?\s*ft\.?\s*\))?\s*[:\-]?\s*([\d,]{3,5})(?:\s*(?:-|–|to)\s*([\d,]{3,5}))?/i) || flat.match(/\b([\d,]{3,5})(?:\s*(?:-|–)\s*([\d,]{3,5}))?\s*(?:sq\.?\s*ft|square\s+feet|sf)\b/i);
+  if(sq){ const a = +sq[1].replace(/,/g, ""), b = sq[2] ? +sq[2].replace(/,/g, "") : 0;
+    if(a >= 300 && a <= 15000){ if(b > a){ out.sqft = Math.round((a + b) / 2); out.sqftNote = `MLS range ${a.toLocaleString()}–${b.toLocaleString()} (midpoint used)`; } else out.sqft = a; } }
+  const lot = flat.match(/\bLot(?:\s+Size|\s+Dimensions|\s+Frontage)?\s*[:\-]?\s*([\d.]+)\s*(ft\.?|feet|'|m\b|metres?|meters?)?\s*[x×X]\s*([\d.]+)\s*(ft\.?|feet|'|m\b|metres?|meters?)?/i) || flat.match(/\b([\d.]+)\s*(ft|')?\s*[x×X]\s*([\d.]+)\s*(Feet|Ft|')/i);
+  if(lot){ const metres = /^m/i.test(lot[2] || lot[4] || ""); const k = metres ? 3.28084 : 1; out.lotFrontage = +(+lot[1] * k).toFixed(1); out.lotDepth = +(+lot[3] * k).toFixed(1); }
+  out.parking = numOf(grab(/\bTotal\s+Park(?:ing)?\s*(?:Spaces|Spcs|Spots)?\s*[:\-]?\s*(\d{1,2})\b/i) || grab(/\bPark(?:ing)?\s*(?:Spaces|Spcs|Spots)\s*[:\-]?\s*(\d{1,2})\b/i) || grab(/\bParking\s*[:\-]?\s*(\d{1,2})\b/i));
+  const g = grab(/\bGarage(?:\s+Type)?\s*[:\-]?\s*(None|Detached|Det\.?|Attached|Att\.?|Built-?\s?In|Carport|Lane(?:way)?|Yes|No)\b/i);
+  const gMap = {none: "None", no: "None", detached: "Detached", det: "Detached", "det.": "Detached", attached: "Attached", att: "Attached", "att.": "Attached", carport: "Carport", lane: "Laneway", laneway: "Laneway"};
+  if(g) out.garage = gMap[g.toLowerCase()] || (/built/i.test(g) ? "Built-in" : /yes/i.test(g) ? "Detached" : "");
+  const car = flat.match(/\b(\d)\s*-?\s*car\s+(detached\s+|attached\s+)?garage/i);
+  if(car){ out.garageSpaces = +car[1]; if(!out.garage) out.garage = /attached/i.test(car[2] || "") ? "Attached" : "Detached"; }
+  if(!out.garageSpaces){ const gs = numOf(grab(/\bGar(?:age)?\s*(?:\/\s*Gar)?\s*(?:Spaces|Spcs)\s*[:\-]?\s*(\d{1,2})\b/i)); if(gs !== "") out.garageSpaces = gs; }
+  const ty = flat.match(/\b(Semi-?\s?Detached|Detached|Att\/Row\/Twnhouse|Row\s*house|Townhouse|Link|Duplex|Triplex|Fourplex|Multiplex|Condo\s+Townhouse)\b/i);
+  if(ty){ const t = ty[1].toLowerCase(); out.propertyType = /semi/.test(t) ? "Semi-detached" : /^detached/.test(t) ? "Detached" : /row|town/.test(t) && !/condo/.test(t) ? "Row / townhouse" : /link/.test(t) ? "Link" : /condo/.test(t) ? "Condo townhouse" : "Duplex / multiplex"; }
+  const st = flat.match(/\b(2\s*1\/2\s*-?\s*Storey|2\.5\s*-?\s*Storey|2\s*-?\s*Storey|3\s*-?\s*Storey|1\s*1\/2\s*-?\s*Storey|1\.5\s*-?\s*Storey|Bungalow-?\s?Raised|Bungaloft|Bungalow|Backsplit\s*\d?|Sidesplit\s*\d?)\b/i);
+  if(st) out.style = st[1].replace(/\s*-?\s*Storey/i, "-storey").replace(/^2\s*1\/2|^2\.5/, "2½").replace(/^1\s*1\/2|^1\.5/, "1½").replace(/^(\w)/, m => m).toLowerCase().replace(/^b/, "B").replace(/^s/, "S");
+  out.era = grabT(new RegExp(String.raw`\b(?:Year\s+Built|Built\s+in|Approx\.?\s*Age)\s*[:\-]\s*([\w+\-\s]{2,15}?)` + stop, "i")) || grab(/\bBuilt\s+in\s+(\d{4})/i);
+  out.basement = grabT(new RegExp(String.raw`\bBasement\s*:\s*([^\n]{3,50}?)` + stop, "i"));
+  const tx = flat.match(/\bTaxes\s*[:\-]?\s*\$?\s?([\d,]{3,6}(?:\.\d{2})?)/i); if(tx) out.taxes = +tx[1].replace(/,/g, "");
+  out.heating = [grabT(new RegExp(String.raw`\bHeat(?:ing)?(?:\s+Type)?\s*:\s*([^\n]{3,30}?)` + stop, "i")), grabT(new RegExp(String.raw`\b(?:A\/C|Air\s+Conditioning|Cooling)\s*:\s*([^\n]{2,25}?)` + stop, "i"))].filter(Boolean).join(", ");
+  out.area = grabT(new RegExp(String.raw`\b(?:Community|Neighbourhood|Neighborhood)\s*:\s*([^\n]{3,40}?)` + stop, "i"));
+  const ADDR = /\b\d{1,5}[A-Z]?\s+(?:[A-Z][\w'’.\-]*\s+){1,4}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Cres|Crescent|Dr|Drive|Pl|Place|Gdns|Gardens|Crt|Ct|Court|Lane|Ln|Way|Tr|Trail|Terr|Terrace|Pkwy|Parkway|Sq|Square|Circ|Circle|Grove|Grv|Park|Hts|Heights|Rdge|Ridge|Glen|Path|Row|Mews|Gate)\b\.?(?:\s+(?:E|W|N|S|East|West|North|South)\b)?/;
+  const am = text.match(ADDR); if(am) out.address = am[0].replace(/\s+/g, " ").trim();
+  const rm = text.match(/(?:Client\s+Remarks|Remarks\s+for\s+Clients|Public\s+Remarks|Property\s+Description|Description|About\s+this\s+(?:home|property))\s*[:\-]?\s*([\s\S]{20,2000}?)(?=\n\s*(?:Extras|Inclusions|Exclusions|Brokerage|Listing\s+Contracted|Contract\s+Date|Rooms?\b|Level\b)|$)/i);
+  const ex = text.match(/\bExtras\s*[:\-]?\s*([\s\S]{5,1000}?)(?=\n\s*(?:Brokerage|Listing|Contract|Rooms?\b|Level\b)|$)/i);
+  const remarks = [rm && rm[1], ex && "Extras: " + ex[1]].filter(Boolean).join("\n\n").replace(/[ \t]{2,}/g, " ").trim();
+  if(remarks) out.remarks = remarks.slice(0, 3000);
+  const featSrc = [remarks, flat].join(" ");
+  const feats = FEATURE_WORDS.filter(([, re]) => re.test(remarks || "")).map(([l]) => l);
+  if(out.basement && /finish/i.test(out.basement) && !feats.includes("Finished basement")) feats.push("Finished basement");
+  if(out.basement && /sep/i.test(out.basement) && !feats.includes("Separate entrance")) feats.push("Separate entrance");
+  if(feats.length) out.keyFeatures = feats.join("\n");
+  out.status = out.soldPrice ? "Sold" : /\bterminated\b/i.test(flat) ? "Terminated" : /\bexpired\b/i.test(flat) ? "Expired" : /\bfor\s+sale\b|\bactive\b/i.test(flat) ? "Active" : "";
+  Object.keys(out).forEach(k => { if(out[k] === "" || out[k] == null) delete out[k]; });
+  return out;
+}
+function listingNote(L, src){
+  const got = [L.address && "address", L.soldPrice && "sold price", L.listPrice && "list price", L.soldDate && "sold date", L.bedrooms && "bedrooms", L.bathrooms && "bathrooms", L.sqft && "square feet", L.lotFrontage && "lot size", L.parking !== undefined && "parking", L.garage && "garage", L.keyFeatures && "key features"].filter(Boolean);
+  if(!got.length) return `Couldn't read details from ${src}. If it's a photo, screenshot or scanned PDF, fill in the details yourself.`;
+  const missing = ["address", "sold price", "square feet", "bedrooms", "bathrooms", "lot size"].filter(x => !got.includes(x));
+  return `Read from ${src}: ${got.join(", ")}.${missing.length ? ` Not found: ${missing.join(", ")}.` : ""} Please check everything against the listing.${L.sqftNote ? " Square footage is the midpoint of the MLS range." : ""}`;
+}
+
+async function openPdfDoc(blob){ const lib = await loadPdfJs(); return lib.getDocument({data: await blob.arrayBuffer()}).promise; }
+async function renderPdfPage(doc, n, width){
+  const page = await doc.getPage(n); const v1 = page.getViewport({scale: 1}); const vp = page.getViewport({scale: width / v1.width});
+  const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  await page.render({canvasContext: c.getContext("2d"), viewport: vp}).promise; return c;
+}
+const canvasBlob = (c, type = "image/jpeg", q = 0.85) => new Promise(res => c.toBlob(res, type, q));
+
+async function handleCompUpload(files){
+  if(!files.length) return;
+  const pdfs = files.filter(isPdfFile), imgs = files.filter(f => !isPdfFile(f));
+  const big = files.filter(f => f.size > MAX_MB * 1024 * 1024); if(big.length){ toast(`${big[0].name} is over ${MAX_MB} MB.`); return; }
+  const imgRecs = [];
+  for(let i = 0; i < imgs.length; i++){ toast(`Uploading photo ${i + 1} of ${imgs.length}…`); try { const r = await uploadToStorage(imgs[i]); r.kind = compFileKind(r); imgRecs.push(r); } catch(e){} }
+  if(!pdfs.length){
+    if(!imgRecs.length) return;
+    openForm("comps", null, {status: "Sold", include: "Yes", files: imgRecs, __newFiles: imgRecs, __note: "Photos and screenshots can't be read automatically, so fill in the details from the listing."});
+    return;
+  }
+  const created = []; let lastNote = "";
+  for(let i = 0; i < pdfs.length; i++){
+    const f = pdfs[i];
+    toast(`Reading listing ${i + 1} of ${pdfs.length}…`);
+    let L = {}, cover = null;
+    try {
+      const doc = await openPdfDoc(f);
+      const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
+      L = parseListing(lines.join("\n"));
+      const c = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(c);
+      if(blob) cover = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"}));
+      if(cover) cover.kind = "photo";
+    } catch(e){}
+    let pdfRec; try { pdfRec = await uploadToStorage(f); } catch(e){ toast(`${f.name} didn't upload.`); continue; }
+    const filesFor = [pdfRec, ...(cover ? [cover] : []), ...(pdfs.length === 1 ? imgRecs : [])];
+    const body = {status: "Sold", include: "Yes", ...L, files: filesFor, needsReview: true, created: Date.now(), updated: Date.now()};
+    if(!body.address) body.address = f.name.replace(/\.pdf$/i, "").replace(/[_\-]+/g, " ");
+    created.push(await insertOne("comps", body)); lastNote = listingNote(L, f.name);
+  }
+  await loadAll();
+  toast(`${created.length} comparable${created.length === 1 ? "" : "s"} added.`);
+  if(created.length === 1){ const rec = data.comps.find(x => x.id === created[0]); if(rec) openForm("comps", rec, {__note: lastNote}); }
+}
+function openListingPaste(){
+  const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
+  dlg.innerHTML = `<form id="lpForm" method="dialog">
+    <div class="m-head"><h2>Paste listing text</h2><button type="button" class="btn ghost" id="lpClose">Close</button></div>
+    <div class="m-body"><div class="f"><label for="lpText">Copy everything on a listing page (on HouseSigma, Realtor.ca, Zolo or your realtor's email, press Ctrl+A then Ctrl+C) and paste it here</label>
+      <textarea id="lpText" style="min-height:240px"></textarea>
+      <span class="meta" style="font-size:13px">The address, prices, sold date, bedrooms, bathrooms, square feet, lot size, parking and key features are filled in for you to check. You can add photos and floor plans after.</span></div></div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="lpCancel">Cancel</button><button type="submit" class="btn primary">Fill in comparable</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#lpClose").onclick = close; $("#lpCancel").onclick = close;
+  $("#lpForm").onsubmit = e => { e.preventDefault(); const t = $("#lpText").value; if(!t.trim()) return; const L = parseListing(t); dlg.close(); openForm("comps", null, {status: "Sold", include: "Yes", ...L, __note: listingNote(L, "the pasted text")}); };
+  dlg.showModal(); setTimeout(() => $("#lpText").focus(), 50);
+}
+
+function sortedComps(){
+  const list = data.comps.filter(c => filters.comps === "All" || (filters.comps === "Sold" ? c.status === "Sold" : c.status !== "Sold"));
+  const by = {date: (a, b) => (b.soldDate || "").localeCompare(a.soldDate || ""), price: (a, b) => compPrice(b) - compPrice(a), ppsf: (a, b) => (compPpsf(b) || 0) - (compPpsf(a) || 0), similar: (a, b) => S.comps.fields.find(f => f.k === "similarity").o.indexOf(a.similarity || "zz") - S.comps.fields.find(f => f.k === "similarity").o.indexOf(b.similarity || "zz"), sqft: (a, b) => num(b.sqft) - num(a.sqft)};
+  return list.sort(by[compSort] || by.date);
+}
+function compUploadBtns(){ return canWrite ? `<label class="btn primary" style="cursor:pointer">Upload MLS listings<input type="file" id="compUpload" multiple accept=".pdf,application/pdf,image/*" hidden></label><button class="btn" data-comppaste>Paste listing text</button><button class="btn" data-add="comps">Add manually</button>` : ""; }
+function vComps(){
+  if(compDetail){ const c = data.comps.find(x => x.id === compDetail); if(c) return vCompDetail(c); compDetail = null; }
+  const header = `<div class="viewhead"><div><h2>Comparables</h2><p>${S.comps.blurb}</p></div><div class="row">${compUploadBtns()}</div></div>`;
+  const tips = `<details class="panel" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:600">Where to get MLS sold listings</summary>
+    <p style="margin:10px 0 6px">Ask a realtor for the MLS "client full" sheets of recent sales near you, which are PDFs with photos, room sizes and the sold price. Upload several at once, and each one becomes a comparable with its details filled in.</p>
+    <p style="margin:0">You can also open a sold listing on HouseSigma, Zolo or Realtor.ca and either save the page as a PDF (Print, then Save as PDF) or copy all the text and use <b>Paste listing text</b>. Screenshots are saved as photos, but their details need typing in.</p></details>`;
+  const subj = data.subject[0];
+  const subjPanel = `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="font-size:22px">Our house</h3>
+      ${subj ? `<div class="meta">${esc([subj.address || project.address, subj.propertyType, subj.style, subj.era].filter(Boolean).join(" · "))}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
+      ${canWrite ? `<button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit our house" : "Add our house's details"}</button>` : ""}</div></div>`;
+  if(!data.comps.length) return header + tips + subjPanel + `<div class="empty"><h3>No comparables yet</h3><p>Upload MLS sold listings and each one gets a summary page with its photos, floor plans, size, lot, parking and key features. This page then lines them all up so you can see what similar houses have sold for.</p><div class="row">${compUploadBtns()}</div></div>`;
+
+  const sold = data.comps.filter(inEstimate);
+  const ppsf = sold.map(compPpsf).filter(Boolean);
+  const adj = sold.map(compAdj).filter(v => v != null);
+  const subSq = subj && num(subj.sqft);
+  const stat = (l, v) => `<div><span>${l}</span><b>${v}</b></div>`;
+  const statsPanel = sold.length ? `<div class="panel" style="margin-bottom:14px"><h3 style="font-size:22px;margin-bottom:6px">${sold.length} sale${sold.length > 1 ? "s" : ""} in the estimate</h3><div class="legend" style="margin-top:0">
+      ${stat("Median sold price", money(median(sold.map(c => num(c.soldPrice)))))}
+      ${stat("Range", `${money(Math.min(...sold.map(c => num(c.soldPrice))))}–${money(Math.max(...sold.map(c => num(c.soldPrice))))}`)}
+      ${ppsf.length ? stat("Median $ / sq ft", money(median(ppsf))) : ""}
+      ${sold.some(compSlp) ? stat("Sold vs list", Math.round(median(sold.map(compSlp).filter(Boolean)) * 100) + "%") : ""}
+      ${sold.some(c => c.dom !== "" && c.dom != null) ? stat("Median days on market", Math.round(median(sold.filter(c => c.dom !== "" && c.dom != null).map(c => num(c.dom))))) : ""}
+    </div>
+    ${subSq && ppsf.length >= 2 ? `<div style="margin-top:14px;padding-top:12px;border-top:3px double var(--line)"><b>Rough value for our house:</b> about <span class="amount" style="font-size:26px">${money(Math.round(median(ppsf) * subSq / 1000) * 1000)}</span> <span class="meta">(${num(subSq).toLocaleString()} sq ft × median ${money(median(ppsf))}/sq ft; middle half of comps ${money(Math.round(pctl(ppsf, .25) * subSq / 1000) * 1000)}–${money(Math.round(pctl(ppsf, .75) * subSq / 1000) * 1000)})</span></div>` : subj ? `<p class="meta" style="margin:10px 0 0">${!subSq ? "Add our house's square feet" : "Add square feet to at least two sold comparables"} to see a rough value.</p>` : ""}
+    ${adj.length ? `<p style="margin:8px 0 0"><b>Average adjusted price:</b> ${money(adj.reduce((a, b) => a + b, 0) / adj.length)} <span class="meta">from ${adj.length} comparable${adj.length > 1 ? "s" : ""} you've adjusted to match our house</span></p>` : ""}
+    <p class="meta" style="margin:10px 0 0;font-size:14px">A rough guide only. Price per square foot varies a lot with lot size, parking, condition and the street itself. A realtor's market analysis or an appraisal will be more reliable.</p></div>` : "";
+
+  const list = sortedComps();
+  const controls = `<div class="row" style="justify-content:space-between;margin-bottom:10px;gap:10px">
+    <div class="row" style="gap:10px">${chips("comps", ["Sold", "Not sold"]).replace('class="chips"', 'class="chips" style="margin:0"')}
+      <label class="meta">Sort by <select id="compSort" style="border:1px solid var(--line);background:var(--surface);border-radius:3px;padding:5px 8px">${[["date", "Sold date"], ["price", "Price"], ["ppsf", "$ / sq ft"], ["sqft", "Size"], ["similar", "Similarity"]].map(([v, l]) => `<option value="${v}" ${compSort === v ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>
+    <div class="chips" style="margin:0"><button data-complayout="rows" aria-pressed="${compLayout === "rows"}">Rows</button><button data-complayout="cols" aria-pressed="${compLayout === "cols"}">Side by side</button></div></div>`;
+  const body = !list.length ? `<p class="meta">No comparables match this filter.</p>` : compLayout === "cols" ? compColumns(list, subj) : compRows(list, subj);
+  return header + tips + subjPanel + statsPanel + controls + body;
+}
+function compRows(list, subj){
+  const row = c => `<tr data-comp="${esc(c.id)}" class="${c.needsReview ? "needs" : ""}" style="${c.include === "No" ? "opacity:.55" : ""}">
+    <td style="width:96px">${compThumb(c, 60)}</td>
+    <td><b>${esc(c.address)}</b><div class="meta">${esc([c.area, c.propertyType, c.style].filter(Boolean).join(" · "))}</div>${c.needsReview ? badge("Check details", "warn") : c.include === "No" ? badge("Not in estimate") : ""}</td>
+    <td>${c.status === "Sold" ? fmtDate(c.soldDate) || "Sold" : esc(c.status || "")}${c.dom !== "" && c.dom != null ? `<div class="meta">${num(c.dom)} days</div>` : ""}</td>
+    <td class="n"><b>${money(compPrice(c))}</b>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">list ${money(c.listPrice)} · ${Math.round(compSlp(c) * 100)}%</div>` : ""}</td>
+    <td class="n">${compPpsf(c) ? money(compPpsf(c)) : "—"}</td>
+    <td class="n">${esc(c.bedrooms || "—")}</td><td class="n">${c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : "—"}</td>
+    <td class="n">${num(c.sqft) ? num(c.sqft).toLocaleString() : "—"}</td>
+    <td>${esc(lotText(c) || "—")}</td><td>${esc(parkText(c) || "—")}</td>
+    <td class="n">${compAdj(c) != null ? money(compAdj(c)) : "—"}</td></tr>`;
+  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td></tr>` : "";
+  return `<div class="tablewrap"><table style="min-width:1050px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
+}
+function compColumns(list, subj){
+  const cols = [...(subj ? [{...subj, __subject: true}] : []), ...list];
+  const ns = `<span class="meta">—</span>`;
+  const rows = [
+    ["", c => `<div style="width:100%">${compThumb(c, 120)}</div>`],
+    ["Address", c => c.__subject ? `<b>Our house</b><div class="meta">after the renovation</div>` : `<button class="btn ghost" style="padding:0;text-align:left;color:var(--ink);font-size:17px" data-comp="${esc(c.id)}">${esc(c.address)}</button><div class="meta">${esc(c.area || "")}</div>`],
+    ["Sold", c => c.__subject ? ns : (c.status === "Sold" ? fmtDate(c.soldDate) || "Sold" : esc(c.status || "")) + (c.dom !== "" && c.dom != null ? `<div class="meta">${num(c.dom)} days on market</div>` : "")],
+    ["Price", c => c.__subject ? ns : `<span class="amount" style="font-size:22px">${money(compPrice(c))}</span>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">list ${money(c.listPrice)} · ${Math.round(compSlp(c) * 100)}% of list</div>` : ""}`],
+    ["$ / sq ft", c => c.__subject ? ns : compPpsf(c) ? money(compPpsf(c)) : ns],
+    ["Type and style", c => esc([c.propertyType, c.style].filter(Boolean).join(", ")) || ns],
+    ["Era", c => esc(c.era || "") || ns],
+    ["Bedrooms", c => esc(c.bedrooms || "") || ns],
+    ["Bathrooms", c => c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : ns],
+    ["Square feet", c => num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta">${esc(c.sqftNote)}</div>` : "") : ns],
+    ["Lot", c => esc(lotText(c)) || ns],
+    ["Parking", c => num(c.parking) || c.parking === 0 ? num(c.parking) + " space" + (num(c.parking) === 1 ? "" : "s") : ns],
+    ["Garage", c => c.garage ? esc(c.garage + (num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : "")) : ns],
+    ["Basement", c => esc(c.basement || "") || ns],
+    ["Taxes", c => num(c.taxes) ? money(c.taxes) : ns],
+    ["Key features", c => c.keyFeatures ? `<ul style="margin:0;padding-left:18px">${String(c.keyFeatures).split(/\n+/).filter(Boolean).slice(0, 10).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ns],
+    ["Similarity", c => c.__subject ? ns : esc(c.similarity || "") || ns],
+    ["Adjusted price", c => c.__subject ? ns : compAdj(c) != null ? `<b>${money(compAdj(c))}</b><div class="meta">${num(c.adjustment) >= 0 ? "+" : ""}${money(c.adjustment)} adjustment</div>` : ns]
+  ];
+  return `<div class="tablewrap cmp"><table style="min-width:${170 + cols.length * 230}px">${rows.map(([l, fn], ri) => `<tr><th class="cmp-label">${l}</th>${cols.map(c => `<td style="${c.__subject ? "background:color-mix(in srgb,var(--accent) 10%,transparent);" : ""}${c.include === "No" ? "opacity:.55" : ""}">${fn(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+}
+function vCompDetail(c){
+  const list = sortedComps(); const i = list.findIndex(x => x.id === c.id);
+  const prev = i > 0 ? list[i - 1] : null, next = i >= 0 && i < list.length - 1 ? list[i + 1] : null;
+  const photos = compPhotos(c), floors = compFloors(c), pdfs = (c.files || []).filter(isPdfFile), others = (c.files || []).filter(f => !isPdfFile(f) && !isImgFile(f));
+  const cover = photos[0] && fileUrl(photos[0].path);
+  const fact = (l, v) => v ? `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="meta" style="font-variant:small-caps;letter-spacing:.05em">${l}</div><div style="font-size:17px">${v}</div></div>` : "";
+  const gallery = (items, kindLabel) => `<div class="gallery">${items.map(f => { const u = fileUrl(f.path); return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener">${u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(f.name)}" loading="lazy">` : `<span>🖼️</span>`}</a>${canWrite ? `<button data-compkind="${esc(c.id)}|${f.i}" class="meta" style="font-size:13px">Move to ${kindLabel}</button>` : ""}</div>`; }).join("")}</div>`;
+  const subj = data.subject[0];
+  const vsOurs = subj ? [num(subj.sqft) && num(c.sqft) ? `${num(c.sqft) > num(subj.sqft) ? "Larger" : num(c.sqft) < num(subj.sqft) ? "Smaller" : "Same size"} than ours by ${Math.abs(num(c.sqft) - num(subj.sqft)).toLocaleString()} sq ft` : "", num(subj.lotFrontage) && num(c.lotFrontage) ? `lot frontage ${num(c.lotFrontage) >= num(subj.lotFrontage) ? "+" : "−"}${Math.abs(num(c.lotFrontage) - num(subj.lotFrontage)).toFixed(1)} ft vs ours` : "", (num(subj.parking) || 0) !== (num(c.parking) || 0) && (c.parking !== undefined && c.parking !== "") ? `${num(c.parking)} parking vs our ${num(subj.parking) || 0}` : ""].filter(Boolean).join("; ") : "";
+  return `<div class="row noprint" style="justify-content:space-between;margin-bottom:10px"><button class="btn ghost" data-comp="" style="padding-left:0">← All comparables</button>
+      <div class="row">${prev ? `<button class="btn" data-comp="${esc(prev.id)}">← Previous</button>` : ""}${next ? `<button class="btn" data-comp="${esc(next.id)}">Next →</button>` : ""}<button class="btn" data-print>Print</button>${canWrite ? `<button class="btn primary" data-edit="comps" data-id="${esc(c.id)}">Edit</button>` : ""}</div></div>
+    ${c.needsReview ? `<p class="banner">These details were read from the listing automatically. Check them, then save the comparable to clear this note.</p>` : ""}
+    <div style="display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));margin-bottom:20px">
+      <div>${cover && cover !== "#" ? `<a href="${esc(cover)}" target="_blank" rel="noopener"><img src="${esc(cover)}" alt="${esc(c.address)}" style="width:100%;max-height:420px;object-fit:cover;border-radius:3px;border:1px solid var(--line);display:block"></a>` : `<div style="height:260px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:3px;font-size:64px">🏠</div>`}</div>
+      <div><span class="meta">${esc([c.area, c.mls && "MLS® " + c.mls, c.distance].filter(Boolean).join(" · "))}</span>
+        <h2 style="font-size:36px;margin:2px 0 6px">${esc(c.address)}</h2>
+        <div class="row" style="gap:18px;align-items:baseline"><span class="amount" style="font-size:34px">${money(compPrice(c))}</span><span class="meta">${c.status === "Sold" ? `Sold${c.soldDate ? " " + fmtDate(c.soldDate) : ""}` : esc(c.status || "")}</span>${c.include === "No" ? badge("Not in estimate") : ""}</div>
+        <div class="meta" style="margin-top:4px">${esc([num(c.listPrice) && "Listed at " + money(c.listPrice), compSlp(c) && Math.round(compSlp(c) * 100) + "% of list", c.dom !== "" && c.dom != null && num(c.dom) + " days on market", compPpsf(c) && money(compPpsf(c)) + " per sq ft"].filter(Boolean).join(" · "))}</div>
+        ${compAdj(c) != null ? `<p style="margin:10px 0 0"><b>Adjusted to match our house:</b> ${money(compAdj(c))} <span class="meta">(${num(c.adjustment) >= 0 ? "+" : ""}${money(c.adjustment)})</span></p>` : ""}
+        ${vsOurs ? `<p class="meta" style="margin:6px 0 0">${esc(vsOurs)}.</p>` : ""}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));column-gap:18px;margin-top:14px">
+          ${fact("Bedrooms", esc(c.bedrooms || ""))}${fact("Bathrooms", c.bathrooms !== "" && c.bathrooms != null ? String(num(c.bathrooms)) : "")}${fact("Square feet", num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta" style="font-size:13px">${esc(c.sqftNote)}</div>` : "") : "")}
+          ${fact("Lot size", esc(lotText(c)))}${fact("Parking", num(c.parking) || c.parking === 0 ? `${num(c.parking)} space${num(c.parking) === 1 ? "" : "s"}` : "")}${fact("Garage", esc(c.garage ? c.garage + (num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : "") : ""))}
+          ${fact("Type", esc(c.propertyType || ""))}${fact("Style", esc(c.style || ""))}${fact("Built", esc(c.era || ""))}
+          ${fact("Basement", esc(c.basement || ""))}${fact("Taxes", num(c.taxes) ? money(c.taxes) + "/yr" : "")}${fact("Heating and cooling", esc(c.heating || ""))}
+        </div></div></div>
+    ${c.keyFeatures ? `<div class="group"><h3>Key features</h3><div class="chips">${String(c.keyFeatures).split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<span class="badge" style="font-size:15px;padding:3px 10px">${esc(x)}</span>`).join("")}</div></div>` : ""}
+    ${c.notes ? `<div class="group"><h3>Your notes</h3><p class="notes" style="max-width:75ch">${esc(c.notes)}</p></div>` : ""}
+    ${photos.length > 1 || (photos.length && !cover) ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
+    <div class="group"><h3>Floor plans <span class="meta">${floors.length || ""}</span></h3>${floors.length ? gallery(floors, "photos") : `<p class="meta">No floor plans yet. Upload them by editing this comparable, or open the listing pages below and save the floor-plan page.</p>`}</div>
+    ${c.remarks ? `<div class="group"><h3>Listing description</h3><p class="notes" style="max-width:75ch">${esc(c.remarks)}</p></div>` : ""}
+    ${pdfs.length ? `<div class="group"><h3>MLS listing sheet</h3>${filesHTML(pdfs)}<button class="btn noprint" style="margin-top:10px" data-renderpdf="${esc(c.id)}">Show the listing pages here</button><div id="pdfpages" style="display:grid;gap:14px;margin-top:12px"></div></div>` : ""}
+    ${others.length ? `<div class="group"><h3>Other files</h3>${filesHTML(others)}</div>` : ""}`;
+}
+async function renderCompPdfs(id){
+  const c = data.comps.find(x => x.id === id); if(!c) return;
+  const box = $("#pdfpages"); if(!box) return;
+  box.innerHTML = `<p class="meta">Loading the listing pages…</p>`;
+  const pdfs = (c.files || []).filter(isPdfFile);
+  box.innerHTML = "";
+  for(const f of pdfs){
+    const {data: blob, error} = await sb.storage.from(BUCKET).download(f.path); if(error) continue;
+    const doc = await openPdfDoc(blob);
+    for(let p = 1; p <= Math.min(doc.numPages, 12); p++){
+      const cv = await renderPdfPage(doc, p, Math.min(1100, box.clientWidth * (window.devicePixelRatio || 1)));
+      cv.style.cssText = "width:100%;height:auto;border:1px solid var(--line);border-radius:3px;background:#fff";
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="meta">Page ${p} of ${doc.numPages}</span>${canWrite ? `<div class="row noprint"><button class="btn" data-savepage="photo" data-cid="${esc(c.id)}" data-name="${esc(f.name.replace(/\.pdf$/i, ""))}-page-${p}">Save as photo</button><button class="btn" data-savepage="floor" data-cid="${esc(c.id)}" data-name="${esc(f.name.replace(/\.pdf$/i, ""))}-page-${p}">Save as floor plan</button></div>` : ""}</div>`;
+      wrap.appendChild(cv); box.appendChild(wrap);
+    }
+  }
+  if(!box.children.length) box.innerHTML = `<p class="meta">Couldn't open the listing sheet.</p>`;
+}
+async function saveRenderedPage(btn){
+  const cv = btn.closest("div").parentElement.querySelector("canvas"); const c = data.comps.find(x => x.id === btn.dataset.cid);
+  if(!cv || !c) return;
+  btn.disabled = true; btn.textContent = "Saving…";
+  const blob = await canvasBlob(cv);
+  const rec = await uploadToStorage(new File([blob], btn.dataset.name + ".jpg", {type: "image/jpeg"}));
+  rec.kind = btn.dataset.savepage;
+  await updRec(c, {files: [...(c.files || []), rec]});
+  btn.textContent = "Saved"; toast(btn.dataset.savepage === "floor" ? "Saved to floor plans." : "Saved to photos.");
+  await loadAll();
+}
+
 // ---- Inbox ----
 const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
 const DEST_NAME = Object.fromEntries(DESTS);
@@ -1628,6 +2053,21 @@ async function fileFromInbox(id, idx){
     documents: {company, docType: guessDocType(f.name + " " + m.subject), title: f.name, files: [fileRec]},
     research: {title: m.subject, source: "Supplier or contractor", date: m.date, conversation: m.body || "", files: [fileRec]}
   };
+  if(dest === "quotes"){
+    let q = null;
+    if(/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)){
+      toast("Reading the quote…");
+      try { const {data: blob, error} = await sb.storage.from(BUCKET).download(f.path); if(!error) q = await readQuoteFile(blob, f.name); } catch(e){}
+    }
+    if(q){
+      const pre = presets.quotes;
+      ["subtotal", "hst", "amount", "deposit", "validUntil"].forEach(k => { if(q[k] !== "" && q[k] != null) pre[k] = q[k]; });
+      if(q.date && !pre.date) pre.date = q.date;
+      if(!pre.trade && q.trade) pre.trade = q.trade;
+      if((!pre.vendor || pre.vendor === emailWho(m)) && q.vendor && !q.__vendorGuessed) pre.vendor = q.vendor;
+      pre.__note = quoteNote(q, f.name);
+    }
+  }
   openForm(dest, null, {...presets[dest], __inbox: {id, idx}});
 }
 async function inboxToConversation(id){
@@ -1865,9 +2305,45 @@ function datalists(){
     companies: uniq(data.companies.map(c => c.name)),
     sheets: uniq(data.plans.map(p => p.sheet)),
     researchTopics: uniq([...RESEARCH_TOPICS, ...data.research.map(x => x.topic)]),
+    compAreas: uniq(data.comps.map(c => c.area)),
+    compStyles: uniq(["2-storey", "2½-storey", "3-storey", "1½-storey", "Bungalow", "Backsplit", "Sidesplit", ...data.comps.map(c => c.style), ...data.subject.map(c => c.style)]),
     rooms: uniq([...data.materials, ...data.photos, ...data.punch, ...data.selections, ...data.warranties].map(m => m.room))
   };
   return Object.entries(lists).map(([k, v]) => `<datalist id="dl-${k}">${v.map(o => `<option value="${esc(o)}">`).join("")}</datalist>`).join("");
+}
+
+function wireHst(dlg, sch, isNew){
+  sch.fields.filter(f => f.t === "hst").forEach(f => {
+    const el = dlg.querySelector(`[name="${f.k}"]`); if(!el) return;
+    const bases = f.base.map(k => dlg.querySelector(`[name="${k}"]`)).filter(Boolean);
+    const totEl = f.total ? dlg.querySelector(`[name="${f.total}"]`) : null;
+    const show = dlg.querySelector(`#hsttot-${f.k}`);
+    const ctx = () => ["category", "item", "title", "reason", "trade", "vendor"].map(k => { const e = dlg.querySelector(`[name="${k}"]`); return e ? e.value : ""; }).join(" ");
+    const rate = () => HST_EXEMPT.test(ctx()) ? 0 : HST_RATE;
+    const baseVal = () => { if(!bases.length) return null; const vals = bases.map(b => b.value === "" ? null : +b.value); if(vals.some(v => v === null || isNaN(v))) return null; return vals.reduce((a, b) => a * b, 1); };
+    const b0 = baseVal();
+    el.dataset.auto = (el.value === "" || (b0 !== null && Math.abs(r2(b0 * rate()) - +el.value) < 0.02)) ? "1" : "0";
+    const refresh = () => { const b = baseVal(); if(show) show.textContent = b !== null ? `${f.showTotal}: ${money2(b + (+el.value || 0))}` : ""; };
+    const fromBase = () => {
+      const b = baseVal();
+      if(b !== null){ if(el.dataset.auto === "1") el.value = r2(b * rate()).toFixed(2); if(totEl) totEl.value = r2(b + (+el.value || 0)).toFixed(2); }
+      refresh();
+    };
+    bases.forEach(b => b.addEventListener("input", () => { b.dataset.fromTotal = "0"; fromBase(); }));
+    ["category", "item", "trade"].forEach(k => { const e = dlg.querySelector(`[name="${k}"]`); if(e) e.addEventListener("change", () => { if(el.dataset.auto === "1") fromBase(); }); });
+    el.addEventListener("input", () => { el.dataset.auto = "0"; if(totEl){ const b = baseVal(); if(b !== null) totEl.value = r2(b + (+el.value || 0)).toFixed(2); } refresh(); });
+    if(totEl && bases.length === 1) totEl.addEventListener("input", () => {
+      const bEl = bases[0];
+      if(bEl.value === "" || bEl.dataset.fromTotal === "1"){
+        const t = +totEl.value;
+        if(totEl.value !== "" && !isNaN(t)){ const b = r2(t / (1 + rate())); bEl.value = b.toFixed(2); bEl.dataset.fromTotal = "1"; el.value = r2(t - b).toFixed(2); el.dataset.auto = "1"; }
+      }
+      refresh();
+    });
+    const btn = dlg.querySelector(`[data-hstreset="${f.k}"]`);
+    if(btn) btn.onclick = () => { el.dataset.auto = "1"; const b = baseVal(); if(b === null && totEl && totEl.value !== "" && bases.length === 1){ bases[0].dataset.fromTotal = "1"; totEl.dispatchEvent(new Event("input")); } else fromBase(); };
+    if(isNew && el.value === "" && baseVal() !== null) fromBase(); else refresh();
+  });
 }
 
 function openForm(col, rec, preset){
@@ -1876,12 +2352,15 @@ function openForm(col, rec, preset){
   if($("#dlg").open){ $("#dlg").onclose = null; $("#dlg").close(); }
   let files = (r.files || []).slice();
   const original = (r.files || []).slice();
-  const newUploads = []; let saved = false;
+  const newUploads = (r.__newFiles || []).slice(); let saved = false;
   let uploading = 0;
   const dlg = $("#dlg");
   const fieldHTML = f => {
     const v = r[f.k] ?? "";
     const id = "f_" + f.k, cls = "f" + (f.half ? " half" : "");
+    if(f.t === "hst") return `<div class="${cls}"><label for="${id}">${f.l} <span style="font-variant:normal;letter-spacing:0">(13%)</span>${canWrite ? ` <button type="button" class="btn ghost" style="padding:0 4px;font-size:13px;font-variant:normal;letter-spacing:0" data-hstreset="${f.k}">recalculate</button>` : ""}</label>
+      <input id="${id}" name="${f.k}" type="number" step="0.01" inputmode="decimal" value="${esc(v)}" ${canWrite ? "" : "disabled"}>
+      ${f.showTotal ? `<span class="meta" style="font-size:14px" id="hsttot-${f.k}"></span>` : ""}<span class="meta" style="font-size:12px">Calculated at 13%. Change it for anything charged differently, or enter 0 if no HST applies (for example City permit fees).</span></div>`;
     if(f.t === "files"){
       return `<div class="${cls}"><label>${f.l}</label><div class="files" id="fileList"></div>
         ${canWrite ? `<input type="file" id="fileInput" multiple aria-label="${f.l}"><span class="meta" style="font-size:13px">Any file type up to ${MAX_MB} MB each: PDFs, photos, Word, Excel, CAD.</span><span class="uploading" id="upState"></span>` : ""}</div>`;
@@ -1896,7 +2375,7 @@ function openForm(col, rec, preset){
   };
   dlg.innerHTML = `<form method="dialog" id="frm" novalidate>
     <div class="m-head"><h2>${rec ? (canWrite ? "Edit " : "") + sch.one : "New " + sch.one}</h2><button type="button" class="btn ghost" id="xBtn" aria-label="Close">Close</button></div>
-    <div class="m-body">${preset && preset.__fromPaste ? `<p class="banner f" style="margin:0">Check these details. They were filled in from what you pasted, and anything left over is in Notes.</p>` : ""}${sch.fields.map(fieldHTML).join("")}<p class="err f" id="formErr" hidden></p></div>
+    <div class="m-body">${preset && preset.__note ? `<p class="banner f" style="margin:0" id="readNote">${esc(preset.__note)}</p>` : ""}${preset && preset.__fromPaste ? `<p class="banner f" style="margin:0">Check these details. They were filled in from what you pasted, and anything left over is in Notes.</p>` : ""}${sch.fields.map(fieldHTML).join("")}<p class="err f" id="formErr" hidden></p></div>
     ${canWrite ? `<div class="m-foot">${rec && col !== "project" ? `<button type="button" class="btn danger" id="delBtn">Delete</button>` : "<span></span>"}<div class="row"><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="submit" class="btn primary" id="saveBtn">Save ${sch.one}</button></div></div>` : ""}
   </form>${datalists()}`;
   const renderFiles = () => {
@@ -1905,6 +2384,7 @@ function openForm(col, rec, preset){
     el.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { files.splice(+b.dataset.rm, 1); renderFiles(); });
   };
   renderFiles();
+  wireHst(dlg, sch, !rec);
   const close = () => dlg.close();
   dlg.onclose = () => { if(!saved) removeFiles(newUploads).catch(() => {}); dlg.onclose = null; };
   $("#xBtn").onclick = close;
@@ -1919,6 +2399,34 @@ function openForm(col, rec, preset){
         const rec2 = await uploadToStorage(file);
         files.push(rec2); newUploads.push(rec2);
         renderFiles(); st.textContent = "";
+        if(col === "comps" && (/pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name))){
+          st.textContent = "Reading the listing…";
+          try {
+            const lines = await pdfLines(file);
+            const L = parseListing(lines.join("\n"));
+            const fill = (k, v) => { const el = dlg.querySelector(`[name="${k}"]`); if(el && !el.value && v !== "" && v != null) el.value = v; };
+            Object.keys(L).forEach(k => { if(!k.startsWith("__")) fill(k, L[k]); });
+            let note = $("#readNote");
+            if(!note){ note = document.createElement("p"); note.className = "banner f"; note.id = "readNote"; note.style.margin = "0"; dlg.querySelector(".m-body").prepend(note); }
+            note.textContent = listingNote(L, file.name);
+          } catch(e){}
+          st.textContent = "";
+        }
+        if(col === "quotes" && /pdf/i.test(file.type || "") || col === "quotes" && /\.pdf$/i.test(file.name)){
+          const amtEl = dlg.querySelector('[name="amount"]');
+          if(amtEl && !amtEl.value){
+            st.textContent = "Reading the price…";
+            const q = await readQuoteFile(file, file.name);
+            st.textContent = "";
+            if(q){
+              const fill = (k, v) => { const el = dlg.querySelector(`[name="${k}"]`); if(el && !el.value && v !== "" && v != null) el.value = typeof v === "number" ? v.toFixed(2).replace(/\.00$/, "") : v; };
+              fill("subtotal", q.subtotal); fill("hst", q.hst); fill("amount", q.amount); fill("deposit", q.deposit); fill("validUntil", q.validUntil); fill("date", q.date); fill("vendor", q.vendor); fill("trade", q.trade);
+              let note = $("#readNote");
+              if(!note){ note = document.createElement("p"); note.className = "banner f"; note.id = "readNote"; note.style.margin = "0"; dlg.querySelector(".m-body").prepend(note); }
+              note.textContent = quoteNote(q, file.name);
+            }
+          }
+        }
       } catch(e){
         st.textContent = /size|large/i.test(e && e.message || "") ? `${file.name} is too large for your Supabase storage limit.` : `${file.name} didn't upload. Try again.`;
       } finally { uploading--; }
@@ -1941,9 +2449,10 @@ function openForm(col, rec, preset){
       const el = dlg.querySelector(`[name="${f.k}"]`);
       let v = el.value.trim();
       if(f.req && !v){ err.hidden = false; err.textContent = `${f.l} is required.`; el.focus(); return; }
-      if(f.t === "money" || f.t === "number") v = v === "" ? "" : +v;
+      if(f.t === "money" || f.t === "number" || f.t === "hst") v = v === "" ? "" : +v;
       body[f.k] = v;
     }
+    if(col === "comps") body.needsReview = false;
     if(col === "invoices"){
       body.needsReview = false;
       if(body.holdback === "" && !rec && HOLDBACK_CATS.includes(body.category)) body.holdback = defaultHoldback(body);
@@ -2009,7 +2518,7 @@ async function starter(kind){
 document.addEventListener("click", e => {
   if(e.target.closest("[data-stop]")) return;
   const v = e.target.closest("[data-view]");
-  if(v){ view = v.dataset.view; compareTrade = null; render(); window.scrollTo(0, 0); return; }
+  if(v){ view = v.dataset.view; compareTrade = null; compDetail = null; render(); window.scrollTo(0, 0); return; }
   const cmpB = e.target.closest("[data-compare]");
   if(cmpB){ compareTrade = cmpB.dataset.compare || null; render(); window.scrollTo(0, 0); return; }
   const acc = e.target.closest("[data-accept]");
@@ -2026,6 +2535,7 @@ document.addEventListener("click", e => {
     if(col === "permits"){ preset.type = "Inspection"; preset.status = "Not started"; }
     if(col === "selections") preset.status = "To decide";
     if(col === "punch"){ preset.status = "Open"; preset.priority = "Normal"; preset.found = todayISO(); }
+    if(col === "comps"){ preset.status = "Sold"; preset.include = "Yes"; }
     if(col === "research"){ preset.date = todayISO(); if(a.dataset.topic) preset.topic = a.dataset.topic; }
     if(col === "photos"){ openPhotoUpload(); return; }
     if(col === "materials") preset.status = "Specified";
@@ -2034,6 +2544,18 @@ document.addEventListener("click", e => {
   if(e.target.closest("[data-paste]")){ openPaste(); return; }
   if(e.target.closest("[data-export]")){ exportInvoices(); return; }
   if(e.target.closest("[data-photoupload]")){ openPhotoUpload(); return; }
+  const cpo = e.target.closest("[data-comp]");
+  if(cpo && !e.target.closest("a")){ compDetail = cpo.dataset.comp || null; render(); window.scrollTo(0, 0); return; }
+  const cl = e.target.closest("[data-complayout]");
+  if(cl){ compLayout = cl.dataset.complayout; render(); return; }
+  if(e.target.closest("[data-comppaste]")){ openListingPaste(); return; }
+  if(e.target.closest("[data-subject]")){ openForm("subject", data.subject[0] || null, data.subject[0] ? null : {address: project.address || ""}); return; }
+  const rp = e.target.closest("[data-renderpdf]");
+  if(rp){ renderCompPdfs(rp.dataset.renderpdf).catch(() => toast("Couldn't show the listing pages.")); return; }
+  const sp = e.target.closest("[data-savepage]");
+  if(sp){ saveRenderedPage(sp).catch(() => toast("Couldn't save that page.")); return; }
+  const ck = e.target.closest("[data-compkind]");
+  if(ck){ const [cid, ix] = ck.dataset.compkind.split("|"); const c = data.comps.find(x => x.id === cid); if(c){ const files = (c.files || []).map((f, i) => i === +ix ? {...f, kind: compFileKind(f) === "floor" ? "photo" : "floor"} : f); updRec(c, {files}).then(loadAll); } return; }
   const fi2 = e.target.closest("[data-filein]");
   if(fi2){ fileFromInbox(fi2.dataset.filein, +fi2.dataset.idx).catch(() => toast("Couldn't file it. Try again.")); return; }
   const ic = e.target.closest("[data-inboxconv]");
@@ -2088,6 +2610,9 @@ document.addEventListener("input", e => {
   const none = $("#researchNone"); if(none) none.hidden = shown > 0;
 });
 document.addEventListener("change", e => {
+  if(e.target.id === "compUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleCompUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
+  if(e.target.id === "compSort"){ compSort = e.target.value; render(); return; }
+  if(e.target.id === "quoteUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleQuoteUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "navSelect"){ view = e.target.value; compareTrade = null; render(); window.scrollTo(0, 0); return; }
   if(e.target.id === "invUpload"){ const fl = e.target.files; handleInvoiceUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); }
 });
