@@ -487,7 +487,7 @@ const S = {
     {k:"taxes",l:"Property taxes (per year)",t:"money",half:1},
     {k:"heating",l:"Heating and cooling",t:"text",half:1},
     {k:"distance",l:"Distance from our house",t:"text",half:1,ph:"e.g. 0.4 km"},
-    {k:"similarity",l:"How similar to ours",t:"select",o:["Very similar","Similar","Somewhat similar","Not very similar"],half:1},
+    {k:"similarity",l:"Your own similarity rating (optional; the portal also scores this automatically)",t:"select",o:["Very similar","Similar","Somewhat similar","Not very similar"],half:1},
     {k:"keyFeatures",l:"Key features (one per line)",t:"textarea"},
     {k:"remarks",l:"Listing description",t:"textarea"},
     {k:"rooms",l:"Room sizes and washrooms",t:"textarea"},
@@ -512,8 +512,10 @@ const S = {
     {k:"basement",l:"Basement",t:"text",half:1},
     {k:"taxes",l:"Property taxes (per year)",t:"money",half:1},
     {k:"keyFeatures",l:"Key features (one per line)",t:"textarea"},
+    {k:"rooms",l:"Room sizes and washrooms",t:"textarea"},
+    {k:"remarks",l:"Listing description",t:"textarea"},
     {k:"notes",l:"Notes",t:"textarea"},
-    {k:"files",l:"Photos",t:"files"}]},
+    {k:"files",l:"MLS listing, photos and floor plans",t:"files"}]},
   holdbacks:{title:"Holdbacks", one:"finish date", blurb:"", fields:[
     {k:"vendor",l:"Contractor",t:"text",req:1},
     {k:"completionDate",l:"Date their work was finished",t:"date",req:1,half:1},
@@ -1720,6 +1722,47 @@ function openReader(id){
 }
 
 // ---- Comparables ----
+// ---- Similarity to our house: compares size, lot, rooms, parking, garage, type, style and basement ----
+const bedCount = b => { const m = String(b || "").match(/(\d+)(?:\s*\+\s*(\d+))?/); return m ? +m[1] + (m[2] ? +m[2] * 0.5 : 0) : null; };
+const storeys = st => { const t = String(st || "").toLowerCase(); if(/bungalow|backsplit|sidesplit/.test(t)) return 1; const m = t.match(/([123])\s*(½|1\/2|\.5)?/); return m ? +m[1] + (m[2] ? 0.5 : 0) : null; };
+const bsmtLevel = b => { const t = String(b || "").toLowerCase(); if(!t) return null; let v = /unfinished|none|crawl/.test(t) ? 0 : /partial/.test(t) ? 1 : /finish/.test(t) ? 2 : null; if(v !== null && /sep|walk-?\s?out|apartment|suite/.test(t)) v += 0.5; return v; };
+const typeRank = {"Detached": 4, "Link": 3.3, "Semi-detached": 3, "Row / townhouse": 2, "Condo townhouse": 1, "Duplex / multiplex": 2.5};
+function similarity(c, h){
+  if(!h || !c) return null;
+  const parts = [], same = [], diff = [];
+  const add = (label, w, score, note, isSame) => { if(score === null || score === undefined || isNaN(score)) return; parts.push({label, w, score: Math.max(0, Math.min(1, score))}); if(note) (isSame ? same : diff).push(note); };
+  const rel = (a, b, tol) => (a > 0 && b > 0) ? 1 - Math.abs(a - b) / b / tol : null;
+  const n = x => num(x);
+  const SAME = {"above grade": "Similar size above grade", "in total": "Similar total finished size", "below grade": "Similar finished basement size"};
+  const sqDiff = (a, b, what) => { const d = Math.round(a - b); return Math.abs(d) / b < 0.05 ? [SAME[what] || "Similar size", true] : [`${Math.abs(d).toLocaleString()} sq ft ${d > 0 ? "larger" : "smaller"} ${what}`, false]; };
+  if(n(c.sqft) && n(h.sqft)){ const [t, ok] = sqDiff(n(c.sqft), n(h.sqft), "above grade"); add("Above-grade size", 25, rel(n(c.sqft), n(h.sqft), 0.5), t, ok); }
+  const cb = c.sqftBelow !== "" && c.sqftBelow != null, hb = h.sqftBelow !== "" && h.sqftBelow != null;
+  if(cb && hb && n(c.sqft) && n(h.sqft)){ const [t, ok] = sqDiff(totalSqft(c), totalSqft(h), "in total"); add("Total finished size", 10, rel(totalSqft(c), totalSqft(h), 0.5), t, ok); }
+  if(cb && hb && n(h.sqftBelow)){ const [t, ok] = sqDiff(n(c.sqftBelow), n(h.sqftBelow), "below grade"); add("Basement size", 5, rel(n(c.sqftBelow), n(h.sqftBelow), 0.8), t, ok); }
+  if(n(c.lotFrontage) && n(h.lotFrontage)){ const d = n(c.lotFrontage) - n(h.lotFrontage); add("Lot frontage", 10, rel(n(c.lotFrontage), n(h.lotFrontage), 0.5), Math.abs(d) < 1 ? "Similar lot width" : `Lot ${Math.abs(d).toFixed(1)} ft ${d > 0 ? "wider" : "narrower"}`, Math.abs(d) < 1); }
+  if(n(c.lotFrontage) && n(c.lotDepth) && n(h.lotFrontage) && n(h.lotDepth)){ const a = n(c.lotFrontage) * n(c.lotDepth), b = n(h.lotFrontage) * n(h.lotDepth); const pc = Math.round((a - b) / b * 100); add("Lot area", 5, rel(a, b, 0.6), Math.abs(pc) < 8 ? "Similar lot size overall" : `Lot area ${Math.abs(pc)}% ${pc > 0 ? "larger" : "smaller"}`, Math.abs(pc) < 8); }
+  const bc = bedCount(c.bedrooms), bh = bedCount(h.bedrooms);
+  if(bc !== null && bh !== null){ const d = bc - bh; add("Bedrooms", 10, 1 - Math.abs(d) * 0.34, d === 0 ? "Same number of bedrooms" : `${Math.abs(d) % 1 ? Math.abs(d) : Math.abs(d)} ${d > 0 ? "more" : "fewer"} bedroom${Math.abs(d) === 1 ? "" : "s"}`, d === 0); }
+  if(c.bathrooms !== "" && c.bathrooms != null && h.bathrooms !== "" && h.bathrooms != null){ const d = n(c.bathrooms) - n(h.bathrooms); add("Bathrooms", 10, 1 - Math.abs(d) * 0.3, d === 0 ? "Same number of bathrooms" : `${Math.abs(d)} ${d > 0 ? "more" : "fewer"} bathroom${Math.abs(d) === 1 ? "" : "s"}`, d === 0); }
+  if(c.parking !== "" && c.parking != null && h.parking !== "" && h.parking != null){ const d = n(c.parking) - n(h.parking); add("Parking", 8, 1 - Math.abs(d) * 0.4, d === 0 ? (n(h.parking) ? "Same parking" : "Neither has parking") : `${Math.abs(d)} ${d > 0 ? "more" : "fewer"} parking space${Math.abs(d) === 1 ? "" : "s"}`, d === 0); }
+  if(c.garage && h.garage){ const cg = c.garage !== "None", hg = h.garage !== "None"; let sc, t, ok = false;
+    if(!cg && !hg){ sc = 1; t = "Neither has a garage"; ok = true; }
+    else if(cg !== hg){ sc = 0; t = cg ? `Has a ${c.garage.toLowerCase()} garage (ours has none)` : `No garage (ours has a ${h.garage.toLowerCase()} one)`; }
+    else { const ds = Math.abs(n(c.garageSpaces || 1) - n(h.garageSpaces || 1)); sc = (c.garage === h.garage ? 1 : 0.75) - ds * 0.25; ok = sc >= 0.99; t = ok ? "Same garage" : `${c.garage} garage${n(c.garageSpaces) ? ` (${n(c.garageSpaces)})` : ""} vs our ${h.garage.toLowerCase()}${n(h.garageSpaces) ? ` (${n(h.garageSpaces)})` : ""}`; }
+    add("Garage", 7, sc, t, ok); }
+  if(c.propertyType && h.propertyType){ const a = typeRank[c.propertyType], b = typeRank[h.propertyType]; const ok = c.propertyType === h.propertyType; add("Property type", 10, ok ? 1 : (a && b ? Math.max(0, 1 - Math.abs(a - b) * 0.6) : 0.2), ok ? `Also ${c.propertyType.toLowerCase()}` : `${c.propertyType} vs our ${h.propertyType.toLowerCase()}`, ok); }
+  const sc0 = storeys(c.style), sh = storeys(h.style);
+  if(sc0 !== null && sh !== null){ const d = sc0 - sh; add("Storeys", 5, 1 - Math.abs(d) * 0.5, d === 0 ? `Also ${c.style}` : `${c.style} vs our ${h.style}`, d === 0); }
+  const bl = bsmtLevel(c.basement), bh2 = bsmtLevel(h.basement);
+  if(bl !== null && bh2 !== null){ const d = bl - bh2; add("Basement finish", 5, 1 - Math.abs(d) * 0.4, Math.abs(d) < 0.25 ? "Similar basement" : `Basement ${d > 0 ? "more" : "less"} finished (${String(c.basement).toLowerCase()})`, Math.abs(d) < 0.25); }
+  const tw = parts.reduce((a, p) => a + p.w, 0);
+  if(tw < 40) return {score: null, same, diff, parts, coverage: tw / 115};
+  return {score: Math.round(parts.reduce((a, p) => a + p.w * p.score, 0) / tw * 100), same, diff, parts, coverage: tw / 115};
+}
+const simLabel = sc => sc === null || sc === undefined ? "" : sc >= 85 ? "Very similar" : sc >= 70 ? "Similar" : sc >= 55 ? "Somewhat similar" : "Not very similar";
+const simKind = sc => sc >= 85 ? "good" : sc >= 70 ? "good" : sc >= 55 ? "warn" : "bad";
+function simBadge(c, h){ const r = similarity(c, h); if(!r || r.score === null) return `<span class="meta">${h ? "Not enough details" : "Add our house"}</span>`; return `<span class="badge ${simKind(r.score)}" title="${esc(simLabel(r.score))}">${r.score}%</span><div class="meta" style="font-size:13px">${simLabel(r.score)}</div>`; }
+
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const roundK = n => Math.round(n / 1000) * 1000;
 // When average and median $/sq ft differ by more than 5%, point to the comparable pulling the average
@@ -1974,7 +2017,7 @@ function openListingPaste(){
 
 function sortedComps(){
   const list = data.comps.filter(c => filters.comps === "All" || (filters.comps === "Sold" ? c.status === "Sold" : c.status !== "Sold"));
-  const by = {date: (a, b) => (b.soldDate || "").localeCompare(a.soldDate || ""), price: (a, b) => compPrice(b) - compPrice(a), ppsf: (a, b) => (compPpsf(b) || 0) - (compPpsf(a) || 0), similar: (a, b) => S.comps.fields.find(f => f.k === "similarity").o.indexOf(a.similarity || "zz") - S.comps.fields.find(f => f.k === "similarity").o.indexOf(b.similarity || "zz"), sqft: (a, b) => num(b.sqft) - num(a.sqft)};
+  const by = {date: (a, b) => (b.soldDate || "").localeCompare(a.soldDate || ""), price: (a, b) => compPrice(b) - compPrice(a), ppsf: (a, b) => (compPpsf(b) || 0) - (compPpsf(a) || 0), similar: (a, b) => { const h = data.subject[0]; const sa = (similarity(a, h) || {}).score, sb = (similarity(b, h) || {}).score; return (sb ?? -1) - (sa ?? -1); }, sqft: (a, b) => num(b.sqft) - num(a.sqft)};
   return list.sort(by[compSort] || by.date);
 }
 function compUploadBtns(){ return canWrite ? `<label class="btn primary" style="cursor:pointer">Upload MLS listings<input type="file" id="compUpload" multiple accept=".pdf,application/pdf,image/*" hidden></label><button class="btn" data-comppaste>Paste listing text</button><button class="btn" data-add="comps">Add manually</button>` : ""; }
@@ -1985,28 +2028,32 @@ function vComps(){
     <p style="margin:10px 0 6px">Ask a realtor for the MLS "client full" sheets of recent sales near you, which are PDFs with photos, room sizes and the sold price. Upload several at once, and each one becomes a comparable with its details filled in.</p>
     <p style="margin:0">You can also open a sold listing on HouseSigma, Zolo or Realtor.ca and either save the page as a PDF (Print, then Save as PDF) or copy all the text and use <b>Paste listing text</b>. Screenshots are saved as photos, but their details need typing in.</p></details>`;
   const subj = data.subject[0];
-  const subjPanel = `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="font-size:22px">Our house</h3>
-      ${subj ? `<div class="meta">${[(subj.address || project.address) ? mapLink(subj.address || project.address) : "", ...[subj.propertyType, subj.style, subj.era].filter(Boolean).map(esc)].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft above grade", num(subj.sqftBelow) && num(subj.sqftBelow).toLocaleString() + " below", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
-      ${canWrite ? `<button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit our house" : "Add our house's details"}</button>` : ""}</div></div>`;
+  const subjPanel = subjectHero(subj);
   if(!data.comps.length) return header + tips + subjPanel + `<div class="empty"><h3>No comparables yet</h3><p>Upload MLS sold listings and each one gets a summary page with its photos, floor plans, size, lot, parking and key features. This page then lines them all up so you can see what similar houses have sold for.</p><div class="row">${compUploadBtns()}</div></div>`;
 
   const sold = data.comps.filter(inEstimate);
   const ppsf = sold.map(compPpsf).filter(Boolean);
   const adj = sold.map(compAdj).filter(v => v != null);
   const subSq = subj && num(subj.sqft);
-  const stat = (l, v) => `<div><span>${l}</span><b>${v}</b></div>`;
+  const stat = (l, v, sub) => `<div><span>${l}</span><b>${v}</b>${sub ? `<span class="meta" style="font-variant:normal;letter-spacing:0;font-size:13px">${sub}</span>` : ""}</div>`;
+  const withAbove = sold.filter(c => num(c.sqft) > 0);
+  const withTotal = withAbove.filter(c => c.sqftBelow !== "" && c.sqftBelow != null);
+  const sqf = n => `${Math.round(n).toLocaleString()} sq ft`;
   const statsPanel = sold.length ? `<div class="panel" style="margin-bottom:14px"><h3 style="font-size:22px;margin-bottom:6px">${sold.length} sale${sold.length > 1 ? "s" : ""} in the estimate</h3><div class="legend" style="margin-top:0">
       ${stat("Median sold price", money(median(sold.map(c => num(c.soldPrice)))))}
       ${sold.length > 1 ? stat("Average sold price", money(roundK(mean(sold.map(c => num(c.soldPrice)))))) : ""}
       ${stat("Range", `${money(Math.min(...sold.map(c => num(c.soldPrice))))}–${money(Math.max(...sold.map(c => num(c.soldPrice))))}`)}
       ${ppsf.length ? stat("Median $ / sq ft above grade", money(median(ppsf))) : ""}
       ${ppsf.length > 1 ? stat("Average $ / sq ft above grade", money(mean(ppsf))) : ""}
+      ${withAbove.length ? stat("Average sq ft above grade", sqf(mean(withAbove.map(c => num(c.sqft)))), [withAbove.length < sold.length ? `from ${withAbove.length} of ${sold.length} sales` : "", subj && num(subj.sqft) ? `ours: ${sqf(num(subj.sqft))}` : ""].filter(Boolean).join(" · ")) : ""}
+      ${withTotal.length ? stat("Average total finished sq ft", sqf(mean(withTotal.map(totalSqft))), [withTotal.length < sold.length ? `from ${withTotal.length} of ${sold.length} sales with below-grade figures` : "above + below grade", subj && num(subj.sqft) ? `ours: ${sqf(totalSqft(subj))}` : ""].filter(Boolean).join(" · ")) : ""}
       ${sold.some(compSlp) ? stat("Sold vs list", Math.round(median(sold.map(compSlp).filter(Boolean)) * 100) + "%") : ""}
       ${sold.some(c => c.dom !== "" && c.dom != null) ? stat("Median days on market", Math.round(median(sold.filter(c => c.dom !== "" && c.dom != null).map(c => num(c.dom))))) : ""}
     </div>
     ${subSq && ppsf.length >= 2 ? `<div style="margin-top:14px;padding-top:12px;border-top:3px double var(--line)">
       <b>Rough value for our house:</b> about <span class="amount" style="font-size:26px">${money(roundK(median(ppsf) * subSq))}</span> <span class="meta">based on the median ${money(median(ppsf))}/sq ft × ${num(subSq).toLocaleString()} sq ft above grade; the middle half of comparables gives ${money(roundK(pctl(ppsf, .25) * subSq))}–${money(roundK(pctl(ppsf, .75) * subSq))}</span>
       <div style="margin-top:4px">Using the average instead: about <b>${money(roundK(mean(ppsf) * subSq))}</b> <span class="meta">(average ${money(mean(ppsf))}/sq ft)</span></div>
+      ${(() => { const pts = sold.filter(compPpsf).map(c => ({p: compPpsf(c), s: (similarity(c, subj) || {}).score})).filter(x => x.s !== null && x.s !== undefined); if(pts.length < 2) return ""; const w = pts.map(x => Math.pow(x.s / 100, 3)); const tw = w.reduce((a, b) => a + b, 0); if(!tw) return ""; const wp = pts.reduce((a, x, i) => a + x.p * w[i], 0) / tw; return `<div style="margin-top:4px">Weighted towards the most similar houses: about <b>${money(roundK(wp * subSq))}</b> <span class="meta">(${money(wp)}/sq ft, giving more weight to higher similarity scores)</span></div>`; })()}
       ${outlierNote(sold, ppsf)}</div>` : subj ? `<p class="meta" style="margin:10px 0 0">${!subSq ? "Add our house's square feet" : "Add square feet to at least two sold comparables"} to see a rough value.</p>` : ""}
     ${adj.length ? `<p style="margin:8px 0 0"><b>Average adjusted price:</b> ${money(adj.reduce((a, b) => a + b, 0) / adj.length)} <span class="meta">from ${adj.length} comparable${adj.length > 1 ? "s" : ""} you've adjusted to match our house</span></p>` : ""}
     <p class="meta" style="margin:10px 0 0;font-size:14px">A rough guide only. Price per square foot varies a lot with lot size, parking, condition and the street itself. A realtor's market analysis or an appraisal will be more reliable.</p></div>` : "";
@@ -2019,6 +2066,68 @@ function vComps(){
   const body = !list.length ? `<p class="meta">No comparables match this filter.</p>` : compLayout === "cols" ? compColumns(list, subj) : compRows(list, subj);
   return header + tips + subjPanel + statsPanel + controls + body;
 }
+function subjectHero(subj){
+  const btns = canWrite ? `<label class="btn" style="cursor:pointer">Upload our MLS listing<input type="file" id="subjListing" accept=".pdf,application/pdf" hidden></label><label class="btn" style="cursor:pointer">Upload floor plans<input type="file" id="subjFloors" accept=".pdf,application/pdf,image/*" multiple hidden></label><button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit details" : "Add details by hand"}</button>` : "";
+  if(!subj) return `<div class="panel" style="margin-bottom:14px;border-color:var(--accent)"><span class="meta" style="font-variant:small-caps;letter-spacing:.06em">Our house</span><h3 style="font-size:26px;margin:2px 0 6px">${esc(project.address || "98 Woodlawn")}</h3><p class="meta" style="margin:0 0 10px">Upload the MLS listing from when you bought, plus floor plans, to fill in your house's details and photos. Then update the size, bedrooms and bathrooms to how they'll be after the renovation and addition, so comparables are scored against the finished house.</p><div class="row">${btns}</div></div>`;
+  const addr = subj.address || project.address;
+  const photos = compPhotos(subj), floors = compFloors(subj);
+  const cover = photos[0] && fileUrl(photos[0].path);
+  const fact = (l, v) => v ? `<div><div class="meta" style="font-variant:small-caps;letter-spacing:.05em;font-size:13px">${l}</div><div style="font-size:17px">${v}</div></div>` : "";
+  const strip = (items, group) => items.length ? `<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${items.slice(0, 12).map((f, i) => { const u = fileUrl(f.path); return `<a href="${esc(u || "#")}" data-lb="subject|${group}|${i}" style="flex:0 0 auto;display:block;width:92px;height:62px;border-radius:2px;overflow:hidden;background:var(--chip);border:1px solid var(--line)">${u && u !== "#" ? `<img src="${esc(u)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">` : ""}</a>`; }).join("")}${items.length > 12 ? `<a href="#" data-lb="subject|${group}|12" class="meta" style="flex:0 0 auto;align-self:center;padding:0 6px">+${items.length - 12} more</a>` : ""}</div>` : "";
+  return `<div class="panel" style="margin-bottom:14px;border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--surface),inset 0 0 0 5px var(--accent)">
+    <div style="display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))">
+      <div>${cover && cover !== "#" ? `<a href="${esc(cover)}" data-lb="subject|photo|0"><img src="${esc(cover)}" alt="Our house" style="width:100%;height:240px;object-fit:cover;border-radius:3px;display:block;border:1px solid var(--line)"></a>` : `<div style="height:240px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:3px;font-size:56px">🏠</div>`}</div>
+      <div><span class="meta" style="font-variant:small-caps;letter-spacing:.06em">Our house${subj.needsReview ? " · details read from the MLS listing; please check them" : ""}</span>
+        <h3 style="font-size:30px;margin:2px 0 4px">${addr ? mapLink(addr) : "Our house"}</h3>
+        <div class="meta">${esc([subj.propertyType, subj.style, subj.era].filter(Boolean).join(" · "))}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 16px;margin:12px 0">
+          ${fact("Bedrooms", esc(subj.bedrooms || ""))}${fact("Bathrooms", subj.bathrooms !== "" && subj.bathrooms != null ? String(num(subj.bathrooms)) : "")}
+          ${fact("Above grade", num(subj.sqft) ? num(subj.sqft).toLocaleString() + " sq ft" : "")}${fact("Below grade", num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() + " sq ft" : "")}
+          ${fact("Lot", esc(lotText(subj)))}${fact("Parking", esc(parkText(subj)))}${fact("Basement", esc(subj.basement || ""))}${fact("Taxes", num(subj.taxes) ? money(subj.taxes) + "/yr" : "")}
+        </div>
+        <div class="row">${btns}</div></div>
+    </div>
+    ${photos.length > 1 ? `<div style="margin-top:14px"><div class="meta" style="margin-bottom:4px">Photos (${photos.length})</div>${strip(photos, "photo")}</div>` : ""}
+    ${floors.length ? `<div style="margin-top:10px"><div class="meta" style="margin-bottom:4px">Floor plans (${floors.length})</div>${strip(floors, "floor")}</div>` : ""}
+    ${subj.keyFeatures ? `<div class="chips" style="margin:12px 0 0">${String(subj.keyFeatures).split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<span class="badge" style="font-size:14px;padding:2px 9px">${esc(x)}</span>`).join("")}</div>` : ""}
+  </div>`;
+}
+// Upload our own MLS listing (details, photos) or floor plans (images, or PDF pages turned into images)
+async function handleSubjectUpload(files, mode){
+  if(!files.length) return;
+  let subj = data.subject[0];
+  const keys = S.subject.fields.map(f => f.k);
+  let fill = {}, newFiles = [], note = "";
+  for(const f of files){
+    if(f.size > MAX_MB * 1024 * 1024){ toast(`${f.name} is over ${MAX_MB} MB.`); continue; }
+    const isPdf = /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name);
+    if(mode === "listing" && isPdf){
+      toast("Reading the listing…");
+      try {
+        const doc = await openPdfDoc(f);
+        const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
+        const L = parseListing(lines.join("\n"));
+        Object.keys(L).forEach(k => { if(keys.includes(k) && (!subj || subj[k] === undefined || subj[k] === "" || subj[k] === null)) fill[k] = L[k]; });
+        toast("Finding the photos…");
+        const shots = await extractPdfPhotos(doc);
+        newFiles = newFiles.concat(await uploadPdfPhotos(shots, "Our house", (n, t) => { if(n === 1 || n % 5 === 0 || n === t) toast(`Saving photo ${n} of ${t}…`); }));
+        note = `Read ${Object.keys(fill).length} detail${Object.keys(fill).length === 1 ? "" : "s"} and ${newFiles.length} photo${newFiles.length === 1 ? "" : "s"} from the listing.`;
+      } catch(e){ note = "Couldn't read that listing automatically."; }
+      const r = await uploadToStorage(f); r.kind = "doc"; newFiles.push(r);
+    } else if(isPdf){
+      toast("Saving the floor plan pages…");
+      try { const doc = await openPdfDoc(f); for(let p = 1; p <= Math.min(doc.numPages, 10); p++){ const cv = await renderPdfPage(doc, p, 1600); const blob = await canvasBlob(cv, "image/jpeg", 0.9); if(blob){ const r = await uploadToStorage(new File([blob], `${f.name.replace(/\.pdf$/i, "")} page ${p}.jpg`, {type: "image/jpeg"})); r.kind = "floor"; newFiles.push(r); } } } catch(e){}
+      const r = await uploadToStorage(f); r.kind = "doc"; newFiles.push(r);
+    } else {
+      try { const r = await uploadToStorage(f); r.kind = mode === "listing" ? "photo" : "floor"; newFiles.push(r); } catch(e){}
+    }
+  }
+  if(!subj){ await insertOne("subject", {address: project.address || "", ...fill, files: newFiles, needsReview: Object.keys(fill).length > 0, created: Date.now(), updated: Date.now()}); }
+  else { const photosFirst = newFiles.filter(x => x.kind === "photo"); await updRec(subj, {...fill, files: [...photosFirst, ...(subj.files || []), ...newFiles.filter(x => x.kind !== "photo")], ...(Object.keys(fill).length ? {needsReview: true} : {})}); }
+  await loadAll();
+  toast(mode === "listing" ? (note || "Listing added.") + " Update the size and rooms to after the renovation." : `${newFiles.filter(x => x.kind === "floor").length} floor plan image${newFiles.filter(x => x.kind === "floor").length === 1 ? "" : "s"} added.`);
+}
+
 function compRows(list, subj){
   const row = c => `<tr data-comp="${esc(c.id)}" class="${c.needsReview ? "needs" : ""}" style="${c.include === "No" ? "opacity:.55" : ""}">
     <td style="width:96px">${compThumb(c, 60)}</td>
@@ -2030,9 +2139,10 @@ function compRows(list, subj){
     <td class="n">${num(c.sqft) ? num(c.sqft).toLocaleString() : "—"}</td>
     <td class="n">${num(c.sqftBelow) ? num(c.sqftBelow).toLocaleString() : "—"}</td>
     <td>${esc(lotText(c) || "—")}</td><td>${esc(parkText(c) || "—")}</td>
-    <td class="n">${compAdj(c) != null ? money(compAdj(c)) : "—"}</td></tr>`;
-  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td class="n">${num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td></tr>` : "";
-  return `<div class="tablewrap"><table style="min-width:1130px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft above grade</th><th class="n">Below grade</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
+    <td class="n">${compAdj(c) != null ? money(compAdj(c)) : "—"}</td>
+    <td>${simBadge(c, subj)}</td></tr>`;
+  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td class="n">${num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td><td class="meta">—</td></tr>` : "";
+  return `<div class="tablewrap"><table style="min-width:1230px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft above grade</th><th class="n">Below grade</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th><th>Similar to ours</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
 }
 function compColumns(list, subj){
   const cols = [...(subj ? [{...subj, __subject: true}] : []), ...list];
@@ -2055,7 +2165,7 @@ function compColumns(list, subj){
     ["Basement", c => esc(c.basement || "") || ns],
     ["Taxes", c => num(c.taxes) ? money(c.taxes) : ns],
     ["Key features", c => c.keyFeatures ? `<ul style="margin:0;padding-left:18px">${String(c.keyFeatures).split(/\n+/).filter(Boolean).slice(0, 10).map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ns],
-    ["Similarity", c => c.__subject ? ns : esc(c.similarity || "") || ns],
+    ["Similar to ours", c => c.__subject ? ns : simBadge(c, subj) + (c.similarity ? `<div class="meta" style="font-size:13px">Your rating: ${esc(c.similarity.toLowerCase())}</div>` : "")],
     ["Adjusted price", c => c.__subject ? ns : compAdj(c) != null ? `<b>${money(compAdj(c))}</b><div class="meta">${num(c.adjustment) >= 0 ? "+" : ""}${money(c.adjustment)} adjustment</div>` : ns]
   ];
   return `<div class="tablewrap cmp"><table style="min-width:${170 + cols.length * 230}px">${rows.map(([l, fn], ri) => `<tr><th class="cmp-label">${l}</th>${cols.map(c => `<td style="${c.__subject ? "background:color-mix(in srgb,var(--accent) 10%,transparent);" : ""}${c.include === "No" ? "opacity:.55" : ""}">${fn(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
@@ -2087,6 +2197,12 @@ function vCompDetail(c){
           ${fact("Type", esc(c.propertyType || ""))}${fact("Style", esc(c.style || ""))}${fact("Built", esc(c.era || ""))}
           ${fact("Basement", esc(c.basement || ""))}${fact("Taxes", num(c.taxes) ? money(c.taxes) + "/yr" : "")}${fact("Heating and cooling", esc(c.heating || ""))}
         </div></div></div>
+    ${(() => { const h = data.subject[0]; if(!h) return ""; const r = similarity(c, h); if(!r || r.score === null) return `<div class="group"><h3>How similar to our house</h3><p class="meta">Not enough details to compare yet. Add size, lot, bedrooms and bathrooms to both houses.</p></div>`;
+      return `<div class="group"><h3>How similar to our house <span class="badge ${simKind(r.score)}" style="font-family:'Libre Caslon Text',Georgia,serif;font-size:15px">${r.score}% · ${simLabel(r.score)}</span></h3>
+        <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));max-width:900px">
+          <div><div class="meta" style="font-variant:small-caps;letter-spacing:.05em">Differences</div>${r.diff.length ? `<ul style="margin:4px 0 0;padding-left:20px">${r.diff.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="meta">None found.</p>`}</div>
+          <div><div class="meta" style="font-variant:small-caps;letter-spacing:.05em">Similarities</div>${r.same.length ? `<ul style="margin:4px 0 0;padding-left:20px">${r.same.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="meta">None found.</p>`}</div>
+        </div>${r.coverage < 0.75 ? `<p class="meta" style="font-size:14px;margin:8px 0 0">Based on ${r.parts.map(p => p.label.toLowerCase()).join(", ")}. Adding more details to either house makes the score more reliable.</p>` : ""}</div>`; })()}
     ${c.keyFeatures ? `<div class="group"><h3>Key features</h3><div class="chips">${String(c.keyFeatures).split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<span class="badge" style="font-size:15px;padding:3px 10px">${esc(x)}</span>`).join("")}</div></div>` : ""}
     ${c.notes ? `<div class="group"><h3>Your notes</h3><p class="notes" style="max-width:75ch">${esc(c.notes)}</p></div>` : ""}
     ${photos.length ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
@@ -2792,7 +2908,7 @@ function openForm(col, rec, preset){
       if(f.t === "money" || f.t === "number" || f.t === "hst") v = v === "" ? "" : +v;
       body[f.k] = v;
     }
-    if(col === "comps") body.needsReview = false;
+    if(col === "comps" || col === "subject") body.needsReview = false;
     if(col === "invoices"){
       body.needsReview = false;
       if(body.holdback === "" && !rec && HOLDBACK_CATS.includes(body.category)) body.holdback = defaultHoldback(body);
@@ -2859,18 +2975,18 @@ document.addEventListener("click", e => {
   const lbl = e.target.closest("[data-lb]");
   if(lbl){
     e.preventDefault();
-    const [cid, group, ix] = lbl.dataset.lb.split("|"); const c = data.comps.find(x => x.id === cid);
+    const [cid, group, ix] = lbl.dataset.lb.split("|"); const c = cid === "subject" ? data.subject[0] : data.comps.find(x => x.id === cid);
     if(c){
       const items = group === "floor" ? compFloors(c) : compPhotos(c);
       const action = canWrite ? {label: group === "floor" ? "This is a photo, not a floor plan" : "This is a floor plan, not a photo", run: async f => {
-        const cur = data.comps.find(x => x.id === cid); if(!cur || !f) return;
+        const cur = cid === "subject" ? data.subject[0] : data.comps.find(x => x.id === cid); if(!cur || !f) return;
         await updRec(cur, {files: (cur.files || []).map((x, k) => k === f.i ? {...x, kind: group === "floor" ? "photo" : "floor"} : x)});
         lb.items.splice(lb.i, 1);
         await loadAll();
         toast(group === "floor" ? "Moved to Photos." : "Moved to Floor plans.");
         if(!lb.items.length) lbClose(); else { lb.i = Math.min(lb.i, lb.items.length - 1); lbShow(); }
       }} : null;
-      lbOpen(items, +ix, `${c.address} · ${group === "floor" ? "Floor plans" : "Photos"}`, action);
+      lbOpen(items, +ix, `${cid === "subject" ? "Our house" : c.address} · ${group === "floor" ? "Floor plans" : "Photos"}`, action);
     }
     return;
   }
@@ -2980,6 +3096,7 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   if(/^fd-/.test(e.target.id || "")){ const fx = document.getElementById("fx-" + e.target.id.slice(3)); if(fx) fx.style.display = e.target.value === "compAdd" ? "" : "none"; return; }
+  if(e.target.id === "subjListing" || e.target.id === "subjFloors"){ const fl = [...e.target.files], mode = e.target.id === "subjListing" ? "listing" : "floors"; e.target.value = ""; handleSubjectUpload(fl, mode).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "compUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleCompUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "compSort"){ compSort = e.target.value; render(); return; }
   if(e.target.id === "quoteUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleQuoteUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
