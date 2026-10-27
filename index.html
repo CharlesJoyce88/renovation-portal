@@ -174,6 +174,22 @@ dialog::backdrop{background:rgba(10,14,16,.55)}
 .md pre{background:var(--chip);padding:10px;border-radius:6px;overflow-x:auto}
 .md table{min-width:0}
 .list1{display:grid;gap:10px;max-width:860px}
+a.maplink{color:inherit;text-decoration:none;border-bottom:1px dotted color-mix(in srgb,currentColor 45%,transparent)}
+a.maplink:hover,a.maplink:focus-visible{color:var(--blue);border-bottom-color:var(--blue)}
+.lb{position:fixed;inset:0;z-index:100;background:rgba(12,15,13,.92);display:flex;align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top,0px)) 64px calc(56px + env(safe-area-inset-bottom,0px));touch-action:pan-y}
+.lb[hidden]{display:none}
+.lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:3px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#222;user-select:none;-webkit-user-drag:none}
+.lb button{position:absolute;border:0;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;font-family:Georgia,serif}
+.lb button:hover,.lb button:focus-visible{background:rgba(255,255,255,.28)}
+.lb .lb-x{top:calc(14px + env(safe-area-inset-top,0px));right:16px;width:44px;height:44px;font-size:28px;line-height:1}
+.lb .lb-prev,.lb .lb-next{top:50%;transform:translateY(-50%);width:48px;height:48px;font-size:34px;line-height:1;padding-bottom:4px}
+.lb .lb-prev{left:10px}.lb .lb-next{right:10px}
+.lb .lb-prev[disabled],.lb .lb-next[disabled]{opacity:.25;cursor:default}
+.lb button[hidden],.lb span[hidden]{display:none}
+.lb .lb-cap{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;color:#e8e2d3;font-size:15px;padding:0 70px}
+.lb .lb-load{position:absolute;color:#e8e2d3}
+.lb .lb-act{bottom:calc(10px + env(safe-area-inset-bottom,0px));right:16px;border-radius:4px;font:13px "Libre Caslon Text",Georgia,serif;padding:6px 10px;background:rgba(255,255,255,.1);color:#d8d1c0}
+@media (max-width:640px){.lb{padding-left:8px;padding-right:8px}.lb .lb-prev,.lb .lb-next{width:42px;height:42px;font-size:28px;background:rgba(0,0,0,.45)}}
 .cmp table{table-layout:fixed}
 .cmp th,.cmp td{vertical-align:top;font-size:15px;border-right:1px solid var(--line)}
 .cmp tbody tr{cursor:default}
@@ -1704,6 +1720,17 @@ function openReader(id){
 }
 
 // ---- Comparables ----
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const roundK = n => Math.round(n / 1000) * 1000;
+// When average and median $/sq ft differ by more than 5%, point to the comparable pulling the average
+function outlierNote(sold, ppsf){
+  if(ppsf.length < 3) return "";
+  const med = median(ppsf), avg = mean(ppsf), gap = (avg - med) / med;
+  if(Math.abs(gap) < 0.05) return `<p class="meta" style="margin:6px 0 0;font-size:14px">The average and median are close, so no single sale is skewing the numbers.</p>`;
+  const withP = sold.filter(c => compPpsf(c)).map(c => ({c, d: compPpsf(c) - med}));
+  const far = withP.sort((a, b) => Math.abs(b.d) - Math.abs(a.d))[0];
+  return `<p class="banner" style="margin:8px 0 0;font-size:15px">The average is ${Math.abs(Math.round(gap * 100))}% ${gap > 0 ? "higher" : "lower"} than the median, mostly because of <button class="btn ghost" style="padding:0;font:inherit;color:var(--blue)" data-comp="${esc(far.c.id)}">${esc(far.c.address)}</button> at ${money(compPpsf(far.c))}/sq ft. If it isn't a fair comparison with our house, set it to not be used in the estimate, or add an adjustment.</p>`;
+}
 const median = a => { if(!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const pctl = (a, p) => { if(!a.length) return null; const s = a.slice().sort((x, y) => x - y), i = (s.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
 const compPrice = c => num(c.soldPrice) || num(c.listPrice);
@@ -1716,6 +1743,13 @@ const isImgFile = f => (f.type || "").startsWith("image/");
 const compFileKind = f => (f.kind && f.kind !== "doc" ? f.kind : null) || (isImgFile(f) ? (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo") : "doc");
 const compPhotos = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "photo");
 const compFloors = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "floor");
+function mapsUrl(addr){
+  let a = String(addr || "").trim(); if(!a) return "";
+  if(!/,|\b(toronto|ontario|ON)\b/i.test(a)) a += ", Toronto, ON";
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(a);
+}
+const MAP_PIN = `<svg width="0.8em" height="0.8em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-0.05em;margin-left:.3em;opacity:.7"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>`;
+function mapLink(addr, label, style){ const u = mapsUrl(addr); return u ? `<a class="maplink" href="${esc(u)}" target="_blank" rel="noopener" data-stop title="Open in Google Maps" style="${style || ""}">${label != null ? label : esc(addr)}${MAP_PIN}</a>` : esc(addr || ""); }
 const belowText = c => num(c.sqftBelow) ? `${num(c.sqftBelow).toLocaleString()} sq ft` : "";
 const totalSqft = c => num(c.sqft) + num(c.sqftBelow);
 const lotText = c => num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(2)} × ${num(c.lotDepth) ? +num(c.lotDepth).toFixed(2) : "?"} ft` : "";
@@ -1952,7 +1986,7 @@ function vComps(){
     <p style="margin:0">You can also open a sold listing on HouseSigma, Zolo or Realtor.ca and either save the page as a PDF (Print, then Save as PDF) or copy all the text and use <b>Paste listing text</b>. Screenshots are saved as photos, but their details need typing in.</p></details>`;
   const subj = data.subject[0];
   const subjPanel = `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="font-size:22px">Our house</h3>
-      ${subj ? `<div class="meta">${esc([subj.address || project.address, subj.propertyType, subj.style, subj.era].filter(Boolean).join(" · "))}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft above grade", num(subj.sqftBelow) && num(subj.sqftBelow).toLocaleString() + " below", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
+      ${subj ? `<div class="meta">${[(subj.address || project.address) ? mapLink(subj.address || project.address) : "", ...[subj.propertyType, subj.style, subj.era].filter(Boolean).map(esc)].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft above grade", num(subj.sqftBelow) && num(subj.sqftBelow).toLocaleString() + " below", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
       ${canWrite ? `<button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit our house" : "Add our house's details"}</button>` : ""}</div></div>`;
   if(!data.comps.length) return header + tips + subjPanel + `<div class="empty"><h3>No comparables yet</h3><p>Upload MLS sold listings and each one gets a summary page with its photos, floor plans, size, lot, parking and key features. This page then lines them all up so you can see what similar houses have sold for.</p><div class="row">${compUploadBtns()}</div></div>`;
 
@@ -1963,12 +1997,17 @@ function vComps(){
   const stat = (l, v) => `<div><span>${l}</span><b>${v}</b></div>`;
   const statsPanel = sold.length ? `<div class="panel" style="margin-bottom:14px"><h3 style="font-size:22px;margin-bottom:6px">${sold.length} sale${sold.length > 1 ? "s" : ""} in the estimate</h3><div class="legend" style="margin-top:0">
       ${stat("Median sold price", money(median(sold.map(c => num(c.soldPrice)))))}
+      ${sold.length > 1 ? stat("Average sold price", money(roundK(mean(sold.map(c => num(c.soldPrice)))))) : ""}
       ${stat("Range", `${money(Math.min(...sold.map(c => num(c.soldPrice))))}–${money(Math.max(...sold.map(c => num(c.soldPrice))))}`)}
       ${ppsf.length ? stat("Median $ / sq ft above grade", money(median(ppsf))) : ""}
+      ${ppsf.length > 1 ? stat("Average $ / sq ft above grade", money(mean(ppsf))) : ""}
       ${sold.some(compSlp) ? stat("Sold vs list", Math.round(median(sold.map(compSlp).filter(Boolean)) * 100) + "%") : ""}
       ${sold.some(c => c.dom !== "" && c.dom != null) ? stat("Median days on market", Math.round(median(sold.filter(c => c.dom !== "" && c.dom != null).map(c => num(c.dom))))) : ""}
     </div>
-    ${subSq && ppsf.length >= 2 ? `<div style="margin-top:14px;padding-top:12px;border-top:3px double var(--line)"><b>Rough value for our house:</b> about <span class="amount" style="font-size:26px">${money(Math.round(median(ppsf) * subSq / 1000) * 1000)}</span> <span class="meta">(${num(subSq).toLocaleString()} sq ft × median ${money(median(ppsf))}/sq ft; middle half of comps ${money(Math.round(pctl(ppsf, .25) * subSq / 1000) * 1000)}–${money(Math.round(pctl(ppsf, .75) * subSq / 1000) * 1000)})</span></div>` : subj ? `<p class="meta" style="margin:10px 0 0">${!subSq ? "Add our house's square feet" : "Add square feet to at least two sold comparables"} to see a rough value.</p>` : ""}
+    ${subSq && ppsf.length >= 2 ? `<div style="margin-top:14px;padding-top:12px;border-top:3px double var(--line)">
+      <b>Rough value for our house:</b> about <span class="amount" style="font-size:26px">${money(roundK(median(ppsf) * subSq))}</span> <span class="meta">based on the median ${money(median(ppsf))}/sq ft × ${num(subSq).toLocaleString()} sq ft above grade; the middle half of comparables gives ${money(roundK(pctl(ppsf, .25) * subSq))}–${money(roundK(pctl(ppsf, .75) * subSq))}</span>
+      <div style="margin-top:4px">Using the average instead: about <b>${money(roundK(mean(ppsf) * subSq))}</b> <span class="meta">(average ${money(mean(ppsf))}/sq ft)</span></div>
+      ${outlierNote(sold, ppsf)}</div>` : subj ? `<p class="meta" style="margin:10px 0 0">${!subSq ? "Add our house's square feet" : "Add square feet to at least two sold comparables"} to see a rough value.</p>` : ""}
     ${adj.length ? `<p style="margin:8px 0 0"><b>Average adjusted price:</b> ${money(adj.reduce((a, b) => a + b, 0) / adj.length)} <span class="meta">from ${adj.length} comparable${adj.length > 1 ? "s" : ""} you've adjusted to match our house</span></p>` : ""}
     <p class="meta" style="margin:10px 0 0;font-size:14px">A rough guide only. Price per square foot varies a lot with lot size, parking, condition and the street itself. A realtor's market analysis or an appraisal will be more reliable.</p></div>` : "";
 
@@ -1983,7 +2022,7 @@ function vComps(){
 function compRows(list, subj){
   const row = c => `<tr data-comp="${esc(c.id)}" class="${c.needsReview ? "needs" : ""}" style="${c.include === "No" ? "opacity:.55" : ""}">
     <td style="width:96px">${compThumb(c, 60)}</td>
-    <td><b>${esc(c.address)}</b><div class="meta">${esc([c.area, c.propertyType, c.style].filter(Boolean).join(" · "))}</div>${c.needsReview ? badge("Check details", "warn") : c.include === "No" ? badge("Not in estimate") : ""}</td>
+    <td><b>${mapLink(c.address)}</b><div class="meta">${esc([c.area, c.propertyType, c.style].filter(Boolean).join(" · "))}</div>${c.needsReview ? badge("Check details", "warn") : c.include === "No" ? badge("Not in estimate") : ""}</td>
     <td>${c.status === "Sold" ? fmtDate(c.soldDate) || "Sold" : esc(c.status || "")}${c.dom !== "" && c.dom != null ? `<div class="meta">${num(c.dom)} days</div>` : ""}</td>
     <td class="n"><b>${money(compPrice(c))}</b>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">list ${money(c.listPrice)} · ${Math.round(compSlp(c) * 100)}%</div>` : ""}</td>
     <td class="n">${compPpsf(c) ? money(compPpsf(c)) : "—"}</td>
@@ -2000,7 +2039,7 @@ function compColumns(list, subj){
   const ns = `<span class="meta">—</span>`;
   const rows = [
     ["", c => `<div style="width:100%">${compThumb(c, 120)}</div>`],
-    ["Address", c => c.__subject ? `<b>Our house</b><div class="meta">after the renovation</div>` : `<button class="btn ghost" style="padding:0;text-align:left;color:var(--ink);font-size:17px" data-comp="${esc(c.id)}">${esc(c.address)}</button><div class="meta">${esc(c.area || "")}</div>`],
+    ["Address", c => c.__subject ? `<b>Our house</b><div class="meta">after the renovation${(c.address || project.address) ? " · " + mapLink(c.address || project.address, "Map") : ""}</div>` : `<button class="btn ghost" style="padding:0;text-align:left;color:var(--ink);font-size:17px" data-comp="${esc(c.id)}">${esc(c.address)}</button><div class="meta">${esc(c.area || "")}${c.area ? " · " : ""}${mapLink(c.address, "Map")}</div>`],
     ["Sold", c => c.__subject ? ns : (c.status === "Sold" ? fmtDate(c.soldDate) || "Sold" : esc(c.status || "")) + (c.dom !== "" && c.dom != null ? `<div class="meta">${num(c.dom)} days on market</div>` : "")],
     ["Price", c => c.__subject ? ns : `<span class="amount" style="font-size:22px">${money(compPrice(c))}</span>${num(c.listPrice) && num(c.soldPrice) ? `<div class="meta">list ${money(c.listPrice)} · ${Math.round(compSlp(c) * 100)}% of list</div>` : ""}`],
     ["$ / sq ft", c => c.__subject ? ns : compPpsf(c) ? money(compPpsf(c)) : ns],
@@ -2027,16 +2066,16 @@ function vCompDetail(c){
   const photos = compPhotos(c), floors = compFloors(c), pdfs = (c.files || []).filter(isPdfFile), others = (c.files || []).filter(f => !isPdfFile(f) && !isImgFile(f));
   const cover = photos[0] && fileUrl(photos[0].path);
   const fact = (l, v) => v ? `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="meta" style="font-variant:small-caps;letter-spacing:.05em">${l}</div><div style="font-size:17px">${v}</div></div>` : "";
-  const gallery = (items, kindLabel) => `<div class="gallery">${items.map(f => { const u = fileUrl(f.path); return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener">${u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(f.name)}" loading="lazy">` : `<span>🖼️</span>`}</a>${canWrite ? `<button data-compkind="${esc(c.id)}|${f.i}" class="meta" style="font-size:13px">Move to ${kindLabel}</button>` : ""}</div>`; }).join("")}</div>`;
+  const gallery = (items, kindLabel) => `<div class="gallery">${items.map((f, gi) => { const u = fileUrl(f.path); return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener" data-lb="${esc(c.id)}|${kindLabel === "photos" ? "floor" : "photo"}|${gi}">${u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(f.name)}" loading="lazy">` : `<span>🖼️</span>`}</a></div>`; }).join("")}</div>`;
   const subj = data.subject[0];
   const vsOurs = subj ? [num(subj.sqft) && num(c.sqft) ? `${num(c.sqft) > num(subj.sqft) ? "Larger" : num(c.sqft) < num(subj.sqft) ? "Smaller" : "Same size"} than ours above grade${num(c.sqft) !== num(subj.sqft) ? ` by ${Math.abs(num(c.sqft) - num(subj.sqft)).toLocaleString()} sq ft` : ""}` : "", (num(subj.sqftBelow) || num(c.sqftBelow)) ? `${num(c.sqftBelow).toLocaleString()} sq ft finished below grade vs our ${num(subj.sqftBelow).toLocaleString()}` : "", num(subj.lotFrontage) && num(c.lotFrontage) ? `lot frontage ${num(c.lotFrontage) >= num(subj.lotFrontage) ? "+" : "−"}${Math.abs(num(c.lotFrontage) - num(subj.lotFrontage)).toFixed(1)} ft vs ours` : "", (num(subj.parking) || 0) !== (num(c.parking) || 0) && (c.parking !== undefined && c.parking !== "") ? `${num(c.parking)} parking vs our ${num(subj.parking) || 0}` : ""].filter(Boolean).join("; ") : "";
   return `<div class="row noprint" style="justify-content:space-between;margin-bottom:10px"><button class="btn ghost" data-comp="" style="padding-left:0">← All comparables</button>
       <div class="row">${prev ? `<button class="btn" data-comp="${esc(prev.id)}">← Previous</button>` : ""}${next ? `<button class="btn" data-comp="${esc(next.id)}">Next →</button>` : ""}<button class="btn" data-print>Print</button>${canWrite ? `<button class="btn primary" data-edit="comps" data-id="${esc(c.id)}">Edit</button>` : ""}</div></div>
     ${c.needsReview ? `<p class="banner">These details were read from the listing automatically. Check them, then save the comparable to clear this note.</p>` : ""}
     <div style="display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));margin-bottom:20px">
-      <div>${cover && cover !== "#" ? `<a href="${esc(cover)}" target="_blank" rel="noopener"><img src="${esc(cover)}" alt="${esc(c.address)}" style="width:100%;max-height:420px;object-fit:cover;border-radius:3px;border:1px solid var(--line);display:block"></a>` : `<div style="height:260px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:3px;font-size:64px">🏠</div>`}</div>
+      <div>${cover && cover !== "#" ? `<a href="${esc(cover)}" target="_blank" rel="noopener" data-lb="${esc(c.id)}|photo|0" title="View photos"><img src="${esc(cover)}" alt="${esc(c.address)}" style="width:100%;max-height:420px;object-fit:cover;border-radius:3px;border:1px solid var(--line);display:block"></a>` : `<div style="height:260px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:3px;font-size:64px">🏠</div>`}</div>
       <div><span class="meta">${esc([c.area, c.mls && "MLS® " + c.mls, c.distance].filter(Boolean).join(" · "))}</span>
-        <h2 style="font-size:36px;margin:2px 0 6px">${esc(c.address)}</h2>
+        <h2 style="font-size:36px;margin:2px 0 6px">${mapLink(c.address)}</h2>
         <div class="row" style="gap:18px;align-items:baseline"><span class="amount" style="font-size:34px">${money(compPrice(c))}</span><span class="meta">${c.status === "Sold" ? `Sold${c.soldDate ? " " + fmtDate(c.soldDate) : ""}` : esc(c.status || "")}</span>${c.include === "No" ? badge("Not in estimate") : ""}</div>
         <div class="meta" style="margin-top:4px">${esc([num(c.listPrice) && "Listed at " + money(c.listPrice), compSlp(c) && Math.round(compSlp(c) * 100) + "% of list", c.dom !== "" && c.dom != null && num(c.dom) + " days on market", compPpsf(c) && money(compPpsf(c)) + " per sq ft"].filter(Boolean).join(" · "))}</div>
         ${compAdj(c) != null ? `<p style="margin:10px 0 0"><b>Adjusted to match our house:</b> ${money(compAdj(c))} <span class="meta">(${num(c.adjustment) >= 0 ? "+" : ""}${money(c.adjustment)})</span></p>` : ""}
@@ -2050,7 +2089,7 @@ function vCompDetail(c){
         </div></div></div>
     ${c.keyFeatures ? `<div class="group"><h3>Key features</h3><div class="chips">${String(c.keyFeatures).split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<span class="badge" style="font-size:15px;padding:3px 10px">${esc(x)}</span>`).join("")}</div></div>` : ""}
     ${c.notes ? `<div class="group"><h3>Your notes</h3><p class="notes" style="max-width:75ch">${esc(c.notes)}</p></div>` : ""}
-    ${photos.length > 1 || (photos.length && !cover) ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
+    ${photos.length ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
     <div class="group"><h3>Floor plans <span class="meta">${floors.length || ""}</span></h3>${floors.length ? gallery(floors, "photos") : `<p class="meta">No floor plans yet. Upload them by editing this comparable, or open the listing pages below and save the floor-plan page.</p>`}</div>
     ${c.rooms ? `<div class="group"><h3>Room sizes</h3><ul style="margin:0;padding-left:20px;max-width:75ch">${String(c.rooms).split(/\n+/).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
     ${c.history ? `<div class="group"><h3>Sales history</h3><ul style="margin:0;padding-left:20px">${String(c.history).split(/\n+/).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
@@ -2058,6 +2097,54 @@ function vCompDetail(c){
     ${pdfs.length ? `<div class="group"><h3>MLS listings and documents</h3>${filesHTML(pdfs)}<button class="btn noprint" style="margin-top:10px" data-renderpdf="${esc(c.id)}">Show the listing pages here</button><div id="pdfpages" style="display:grid;gap:14px;margin-top:12px"></div></div>` : ""}
     ${others.length ? `<div class="group"><h3>Other files</h3>${filesHTML(others)}</div>` : ""}`;
 }
+// ---- Photo viewer: opens over the page; × to close, arrows (or keyboard / swipe) to move between photos ----
+const lb = {items: [], i: 0, el: null, title: ""};
+function lbEnsure(){
+  if(lb.el) return lb.el;
+  const el = document.createElement("div");
+  el.className = "lb"; el.hidden = true; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Photo viewer");
+  el.innerHTML = `<span class="lb-load">Loading…</span><img alt=""><button class="lb-prev" aria-label="Previous photo">‹</button><button class="lb-next" aria-label="Next photo">›</button><button class="lb-x" aria-label="Close">×</button><div class="lb-cap"></div><button class="lb-act" hidden></button>`;
+  el.addEventListener("click", e => {
+    e.stopPropagation();
+    if(e.target.closest(".lb-x") || e.target === el) return lbClose();
+    if(e.target.closest(".lb-prev")) return lbGo(-1);
+    if(e.target.closest(".lb-next")) return lbGo(1);
+    if(e.target.closest(".lb-act") && lb.action) return lb.action.run(lb.items[lb.i]);
+  });
+  let sx = null, sy = null;
+  el.addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive: true});
+  el.addEventListener("touchend", e => { if(sx === null) return; const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) lbGo(dx < 0 ? 1 : -1); else if(dy > 90 && Math.abs(dy) > Math.abs(dx)) lbClose(); sx = null; });
+  el.querySelector("img").addEventListener("load", () => { el.querySelector(".lb-load").hidden = true; });
+  document.body.appendChild(el); lb.el = el; return el;
+}
+async function lbUrls(paths){
+  const missing = paths.filter(p => !urlCache[p] || urlCache[p] === "#");
+  if(missing.length){ const {data: res} = await sb.storage.from(BUCKET).createSignedUrls(missing, 60 * 60 * 6); (res || []).forEach((r, i) => { if(r.signedUrl) urlCache[r.path || missing[i]] = r.signedUrl; }); }
+}
+async function lbOpen(items, start, title, action){
+  lb.action = action || null;
+  if(!items.length) return;
+  lb.items = items; lb.i = Math.max(0, Math.min(start, items.length - 1)); lb.title = title || "";
+  lb.returnFocus = document.activeElement;
+  const el = lbEnsure(); el.hidden = false; document.body.style.overflow = "hidden";
+  await lbUrls(items.map(x => x.path));
+  lbShow(); el.querySelector(".lb-x").focus();
+}
+function lbShow(){
+  const el = lb.el, f = lb.items[lb.i]; if(!el || !f) return;
+  const img = el.querySelector("img"), u = urlCache[f.path];
+  el.querySelector(".lb-load").hidden = false;
+  img.src = u && u !== "#" ? u : ""; img.alt = f.name || "Photo";
+  el.querySelector(".lb-prev").disabled = lb.i === 0;
+  el.querySelector(".lb-next").disabled = lb.i === lb.items.length - 1;
+  el.querySelector(".lb-prev").hidden = el.querySelector(".lb-next").hidden = lb.items.length < 2;
+  const act = el.querySelector(".lb-act"); act.hidden = !lb.action; if(lb.action) act.textContent = lb.action.label;
+  el.querySelector(".lb-cap").textContent = [lb.title, lb.items.length > 1 ? `${lb.i + 1} of ${lb.items.length}` : ""].filter(Boolean).join(" · ");
+  [lb.i - 1, lb.i + 1].forEach(j => { const n = lb.items[j]; if(n && urlCache[n.path]){ const pre = new Image(); pre.src = urlCache[n.path]; } });
+}
+function lbGo(d){ const j = lb.i + d; if(j < 0 || j >= lb.items.length) return; lb.i = j; lbShow(); }
+function lbClose(){ if(!lb.el || lb.el.hidden) return; lb.el.hidden = true; lb.el.querySelector("img").src = ""; document.body.style.overflow = ""; if(lb.returnFocus && lb.returnFocus.focus) lb.returnFocus.focus(); }
+
 async function renderCompPdfs(id){
   const c = data.comps.find(x => x.id === id); if(!c) return;
   const box = $("#pdfpages"); if(!box) return;
@@ -2157,7 +2244,7 @@ function vInbox(){
       ${canWrite ? `<div class="row" style="margin-top:8px"><button class="btn primary" data-heldadd="${esc(m.id)}">Add sender to contacts</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}</div>`;
     const files = m.files || [];
     return `<div class="panel">
-      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start;gap:10px"><div><span class="meta">${fmtDate(m.date)}${m.forwardedFrom ? " · forwarded" : ""}</span><h3 style="font-size:21px">${esc(m.subject)}</h3></div>${k && k.label ? badge(k.label) : ""}</div>
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap;align-items:flex-start;gap:10px"><div><span class="meta">${fmtDate(m.date)}${m.forwardedFrom ? " · forwarded" : ""}</span><h3 style="font-size:21px">${esc(m.subject)}</h3></div><div class="row" style="gap:6px">${m.status === "done" ? badge("Done", "good") : ""}${k && k.label ? badge(k.label) : ""}</div></div>
       <div class="meta">From <b style="color:var(--ink)">${esc(emailWho(m))}</b>${co ? ", " + esc(co) : ""} · ${esc(emailAddr(m))}</div>
       ${m.body ? `<details style="margin-top:8px"><summary class="meta" style="cursor:pointer">Show message</summary><div class="notes" style="max-height:340px;overflow:auto;border-left:3px double var(--line);padding-left:10px">${esc(m.body)}</div></details>` : ""}
       ${files.length ? `<div style="margin-top:10px;border-top:1px solid var(--line)">${files.map((f, i) => `<div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);gap:8px">
@@ -2169,7 +2256,8 @@ function vInbox(){
     </div>`;
   };
   return `<div class="viewhead"><div><h2>Inbox</h2><p>${S.inbox.blurb}</p></div></div>` + addrLine
-    + chips("inbox", opts).replace(/>New</, `>New (${counts.New})<`).replace(/>Unknown senders</, `>Unknown senders (${held.length})<`)
+    + chips("inbox", opts).replace(/>New</, `>New (${counts.New})<`).replace(/>Done</, `>Done (${counts.Done})<`).replace(/>Unknown senders</, `>Unknown senders (${held.length})<`)
+    + `<p class="meta" style="margin:-6px 0 12px;font-size:14px">${filters.inbox === "Done" ? "Emails you've finished with. Use Move back to new to bring one back." : "File each attachment, then Mark done to move the email to Done. Emails are marked done automatically once every attachment is filed."}</p>`
     + (list.length ? `<div class="list1">${list.map(card).join("")}</div>` : `<p class="meta">${filters.inbox === "New" ? "You're all caught up." : "Nothing here."}</p>`);
 }
 const SEL_STYLE = "border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px;max-width:220px";
@@ -2221,7 +2309,7 @@ async function fileToComp(m, items, compId){
     id = await insertOne("comps", body);
   }
   await updRec(m, {files: m.files.map((x, i) => items.some(it => it.idx === i) ? {...x, filed: "comps"} : x)});
-  await loadAll();
+  await loadAll(); await autoDone(m.id);
   return {id, filledNote, L};
 }
 function openFileAllToComp(id){
@@ -2256,13 +2344,18 @@ function openFileAllToComp(id){
   dlg.showModal();
 }
 
+// When every attachment on a new email has been filed, move the email to Done
+async function autoDone(id){
+  const m = data.inbox.find(x => x.id === id);
+  if(m && m.status === "new" && (m.files || []).length && m.files.every(f => f.filed)){ await updRec(m, {status: "done"}); await loadAll(); toast("All attachments filed, so the email moved to Done."); }
+}
 async function fileFromInbox(id, idx){
   const m = data.inbox.find(x => x.id === id); if(!m) return;
   const f = (m.files || [])[idx]; if(!f) return;
   const sel = document.getElementById(`fd-${id}-${idx}`); const dest = sel ? sel.value : suggestDest(m, f);
   const fileRec = {path: f.path, name: f.name, type: f.type, size: f.size};
   const k = emailContact(m), company = emailCompany(m) || emailWho(m);
-  const mark = async col => { await updRec(m, {files: m.files.map((x, i) => i === idx ? {...x, filed: col} : x)}); await loadAll(); };
+  const mark = async col => { await updRec(m, {files: m.files.map((x, i) => i === idx ? {...x, filed: col} : x)}); await loadAll(); await autoDone(id); };
   if(dest === "keep"){ await mark("keep"); return; }
   if(dest === "compNew" || dest === "compAdd"){
     const compId = dest === "compAdd" ? (document.getElementById(`fc-${id}-${idx}`) || {}).value || "" : "";
@@ -2718,7 +2811,7 @@ function openForm(col, rec, preset){
     try {
       if(col === "contacts") await linkCompany(body);
       await save(col, rec && rec.id, body); saved = true;
-      if(r.__inbox){ const ib = data.inbox.find(x => x.id === r.__inbox.id); if(ib){ await updRec(ib, {files: (ib.files || []).map((x, i) => i === r.__inbox.idx ? {...x, filed: col} : x)}); await loadAll(); } }
+      if(r.__inbox){ const ib = data.inbox.find(x => x.id === r.__inbox.id); if(ib){ await updRec(ib, {files: (ib.files || []).map((x, i) => i === r.__inbox.idx ? {...x, filed: col} : x)}); await loadAll(); await autoDone(r.__inbox.id); } }
       const keep = new Set(files.map(f => f.path));
       removeFiles(original.filter(f => !keep.has(f.path))).catch(() => {});
       close(); toast(`Saved ${sch.one}.`);
@@ -2763,6 +2856,24 @@ async function starter(kind){
 
 // ---------- events ----------
 document.addEventListener("click", e => {
+  const lbl = e.target.closest("[data-lb]");
+  if(lbl){
+    e.preventDefault();
+    const [cid, group, ix] = lbl.dataset.lb.split("|"); const c = data.comps.find(x => x.id === cid);
+    if(c){
+      const items = group === "floor" ? compFloors(c) : compPhotos(c);
+      const action = canWrite ? {label: group === "floor" ? "This is a photo, not a floor plan" : "This is a floor plan, not a photo", run: async f => {
+        const cur = data.comps.find(x => x.id === cid); if(!cur || !f) return;
+        await updRec(cur, {files: (cur.files || []).map((x, k) => k === f.i ? {...x, kind: group === "floor" ? "photo" : "floor"} : x)});
+        lb.items.splice(lb.i, 1);
+        await loadAll();
+        toast(group === "floor" ? "Moved to Photos." : "Moved to Floor plans.");
+        if(!lb.items.length) lbClose(); else { lb.i = Math.min(lb.i, lb.items.length - 1); lbShow(); }
+      }} : null;
+      lbOpen(items, +ix, `${c.address} · ${group === "floor" ? "Floor plans" : "Photos"}`, action);
+    }
+    return;
+  }
   if(photoSelect && view === "photos"){
     const tile = e.target.closest(".tile[data-pid]");
     if(tile){ e.preventDefault(); const id = tile.dataset.pid; photoPicked.has(id) ? photoPicked.delete(id) : photoPicked.add(id); render(); return; }
@@ -2774,7 +2885,7 @@ document.addEventListener("click", e => {
   if(e.target.closest("[data-photodelsel]")){ deletePhotos([...photoPicked]).then(() => { if(!photoPicked.size){ photoSelect = false; render(); } }).catch(() => toast("Couldn't delete. Try again.")); return; }
   if(e.target.closest("[data-stop]")) return;
   const v = e.target.closest("[data-view]");
-  if(v){ view = v.dataset.view; compareTrade = null; compDetail = null; photoSelect = false; photoPicked.clear(); render(); window.scrollTo(0, 0); return; }
+  if(v){ lbClose(); view = v.dataset.view; compareTrade = null; compDetail = null; photoSelect = false; photoPicked.clear(); render(); window.scrollTo(0, 0); return; }
   const cmpB = e.target.closest("[data-compare]");
   if(cmpB){ compareTrade = cmpB.dataset.compare || null; render(); window.scrollTo(0, 0); return; }
   const acc = e.target.closest("[data-accept]");
@@ -2819,7 +2930,7 @@ document.addEventListener("click", e => {
   const ic = e.target.closest("[data-inboxconv]");
   if(ic){ inboxToConversation(ic.dataset.inboxconv).catch(() => toast("Couldn't save. Try again.")); return; }
   const idn = e.target.closest("[data-inboxdone]");
-  if(idn){ const m = data.inbox.find(x => x.id === idn.dataset.inboxdone); if(m) updRec(m, {status: m.status === "done" ? "new" : "done"}).then(loadAll).catch(() => toast("Couldn't save. Try again.")); return; }
+  if(idn){ const m = data.inbox.find(x => x.id === idn.dataset.inboxdone); if(m){ const toDone = m.status !== "done"; idn.disabled = true; updRec(m, {status: toDone ? "done" : "new"}).then(loadAll).then(() => toast(toDone ? `“${m.subject.slice(0, 40)}” moved to Done.` : `“${m.subject.slice(0, 40)}” moved back to New.`)).catch(() => { idn.disabled = false; toast("Couldn't save. Try again."); }); } return; }
   const idl = e.target.closest("[data-inboxdel]");
   if(idl){ deleteEmail(idl.dataset.inboxdel).catch(() => toast("Couldn't delete. Try again.")); return; }
   const ha = e.target.closest("[data-heldadd]");
@@ -2892,6 +3003,12 @@ document.addEventListener("submit", async e => {
 });
 $("#signOut").onclick = () => sb.auth.signOut();
 document.addEventListener("keydown", e => {
+  if(lb.el && !lb.el.hidden){
+    if(e.key === "Escape"){ e.preventDefault(); lbClose(); return; }
+    if(e.key === "ArrowLeft"){ e.preventDefault(); lbGo(-1); return; }
+    if(e.key === "ArrowRight"){ e.preventDefault(); lbGo(1); return; }
+    if(e.key === "Tab"){ const b = [...lb.el.querySelectorAll("button:not([hidden]):not([disabled])")]; const i = b.indexOf(document.activeElement); e.preventDefault(); (b[(i + (e.shiftKey ? -1 : 1) + b.length) % b.length] || b[0]).focus(); return; }
+  }
   if((e.key === "Enter" || e.key === " ") && e.target.matches('.card[role="button"]')){ e.preventDefault(); e.target.click(); }
 });
 // Scroll the Gantt to today on first view
