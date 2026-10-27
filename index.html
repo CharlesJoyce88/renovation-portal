@@ -157,6 +157,13 @@ dialog::backdrop{background:rgba(10,14,16,.55)}
 .tile a.img img{width:100%;height:100%;object-fit:cover;display:block}
 .tile a.img span{display:flex;height:100%;align-items:center;justify-content:center;font-size:32px}
 .tile button{background:none;border:0;text-align:left;padding:8px 10px;cursor:pointer;font-size:14px;color:var(--ink)}
+.tile{position:relative}
+.tile .tile-del{position:absolute;top:6px;right:6px;width:32px;height:32px;padding:0;border-radius:50%;background:rgba(20,24,22,.72);color:#fff;font-size:18px;line-height:32px;text-align:center;opacity:.85}
+.tile .tile-del:hover,.tile .tile-del:focus-visible{opacity:1;background:var(--bad)}
+.tile .tile-check{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,22,.45);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;pointer-events:none}
+.tile.picked{outline:3px solid var(--accent);outline-offset:-3px}
+.tile.picked .tile-check{background:var(--accent);border-color:var(--accent)}
+.selecting .tile{cursor:pointer}
 .progress{height:10px;background:var(--chip);border-radius:5px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--good)}
 .md{font-size:16px;line-height:1.6}
@@ -302,7 +309,7 @@ const matBase = m => num(m.qty) * num(m.unitCost);
 const matTotal = m => matBase(m) + hstOf(m, matBase(m));
 const selTotal = x => num(x.cost) + hstOf(x, x.cost);
 const RESEARCH_TOPICS = ["Home automation","Door hardware","Lighting","Heating & cooling","Windows & doors","Insulation & energy","Kitchen","Bathroom","Flooring","Tile","Appliances","Paint & finishes","Millwork & trim","Heritage & period details","Roofing","Exterior & landscaping","Structure & engineering","Permits & regulations","Costs & financing"];
-const LABELS = ["General contractor","Designer","Architect","Engineer","Surveyor","Subcontractor","Supplier","Inspector","Lender","Other"];
+const LABELS = ["General contractor","Designer","Architect","Engineer","Surveyor","Subcontractor","Supplier","Inspector","Lender","Realtor","Other"];
 const PAY_METHODS = ["Credit card","Debit card","E-transfer","Cheque","Cash","Bank transfer / wire","Line of credit / financing","Other"];
 const S = {
   quotes:{title:"Quotes", one:"quote", blurb:"Every bid you collect, grouped by trade. Open Compare on any trade to see its quotes side by side.", fields:[
@@ -586,6 +593,7 @@ let project = {}, projectId = null;
 let sb = null, session = null, live = false, member = null, canWrite = true, connecting = true, view = "overview", authMsg = "", started = false;
 let compareTrade = null;
 let compDetail = null, compLayout = "rows", compSort = "date";
+let photoSelect = false; const photoPicked = new Set();
 const filters = {comps:"Sold", inbox:"New", photos:"All", punch:"Open", research:"All", invoices:"All", invoiceStatus:"All", plans:"All", conversations:"All", materials:"All", contacts:"All"};
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_KEY.includes("YOUR-");
 
@@ -1050,7 +1058,7 @@ function vConversations(){
 
 // ---- Expenses / invoices ----
 const INV_CATS = S.invoices.fields.find(f => f.k === "category").o;
-const LABEL_TO_CAT = {"General contractor":"General contractor","Designer":"Designer","Architect":"Architect","Engineer":"Engineer","Surveyor":"Surveyor","Subcontractor":"Subcontractor","Supplier":"Materials & supplies","Inspector":"Permits & inspections","Lender":"Financing","Other":"Other"};
+const LABEL_TO_CAT = {"Realtor":"Other","General contractor":"General contractor","Designer":"Designer","Architect":"Architect","Engineer":"Engineer","Surveyor":"Surveyor","Subcontractor":"Subcontractor","Supplier":"Materials & supplies","Inspector":"Permits & inspections","Lender":"Financing","Other":"Other"};
 const CAT_COLORS = ["#7E9474","#963A2D","#B98A3E","#8A6A4F","#5B6E86","#B07A78","#4F7D78","#A8844F","#6F7344","#7A5873"];
 const catColor = c => CAT_COLORS[Math.max(0, INV_CATS.indexOf(c)) % CAT_COLORS.length];
 const kfmt = n => n >= 1000 ? "$" + (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : "$" + Math.round(n);
@@ -1463,7 +1471,11 @@ function vPermits(){
 // ---- Photos ----
 function vPhotos(){
   const btn = canWrite ? `<button class="btn primary" data-photoupload>Upload photos</button>` : "";
-  const header = `<div class="viewhead"><div><h2>Photos</h2><p>${S.photos.blurb}</p></div><div class="row">${btn}</div></div>`;
+  [...photoPicked].forEach(id => { if(!data.photos.some(x => x.id === id)) photoPicked.delete(id); });
+  const actions = !canWrite ? "" : photoSelect
+    ? `<span class="meta">${photoPicked.size} selected</span><button class="btn" data-photoselall>Select all shown</button><button class="btn danger" data-photodelsel ${photoPicked.size ? "" : "disabled"}>Delete selected</button><button class="btn" data-photoselect>Done</button>`
+    : `${data.photos.length ? `<button class="btn" data-photoselect>Select</button>` : ""}${btn}`;
+  const header = `<div class="viewhead"><div><h2>Photos</h2><p>${S.photos.blurb}</p></div><div class="row">${actions}</div></div>`;
   if(!data.photos.length) return header + `<div class="empty"><h3>No photos yet</h3><p>Upload progress photos with the date and room. Photos of plumbing, wiring and framing before the walls are closed are the ones you'll be most glad to have later.</p><div class="row">${btn}</div></div>`;
   const rooms = [...new Set(data.photos.map(x => x.room).filter(Boolean))].sort();
   const opts = [...(data.photos.some(x => x.insideWalls === "Yes") ? ["Inside walls"] : []), ...rooms];
@@ -1471,11 +1483,25 @@ function vPhotos(){
   const byDate = {};
   list.forEach(x => (byDate[x.date || "No date"] ||= []).push(x));
   const dates = Object.keys(byDate).sort().reverse();
-  return header + (opts.length ? chips("photos", opts) : "") + `<p class="meta" style="margin-top:-4px">${list.length} photo${list.length === 1 ? "" : "s"}</p>` + dates.map(d => `<div class="group"><h3>${d === "No date" ? d : fmtDate(d)}</h3><div class="gallery">${byDate[d].map(x => {
+  return header + (opts.length ? chips("photos", opts) : "") + `<p class="meta" style="margin-top:-4px">${list.length} photo${list.length === 1 ? "" : "s"}${photoSelect ? " · tap photos to select them" : ""}</p><div class="${photoSelect ? "selecting" : ""}" id="photoGrid">` + dates.map(d => `<div class="group"><h3>${d === "No date" ? d : fmtDate(d)}</h3><div class="gallery">${byDate[d].map(x => {
     const f = (x.files || [])[0], u = f && fileUrl(f.path), isImg = f && (f.type || "").startsWith("image/");
-    return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener" data-stop>${isImg && u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(x.caption || x.room || "Photo")}" loading="lazy">` : `<span>${f ? fileIcon(f.type) : "📷"}</span>`}</a>
+    const picked = photoPicked.has(x.id);
+    return `<div class="tile ${picked ? "picked" : ""}" data-pid="${esc(x.id)}">${photoSelect ? `<span class="tile-check" aria-hidden="true">${picked ? "✓" : ""}</span>` : canWrite ? `<button class="tile-del" data-delphoto="${esc(x.id)}" aria-label="Delete this photo" title="Delete">×</button>` : ""}<a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener" data-stop>${isImg && u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(x.caption || x.room || "Photo")}" loading="lazy">` : `<span>${f ? fileIcon(f.type) : "📷"}</span>`}</a>
       <button data-edit="photos" data-id="${esc(x.id)}"><b>${esc(x.room || "Photo")}</b>${x.insideWalls === "Yes" ? ` ${badge("Inside walls", "warn")}` : ""}<br><span class="meta">${esc(x.caption || x.phase || "")}</span></button></div>`;
-  }).join("")}</div></div>`).join("");
+  }).join("")}</div></div>`).join("") + `</div>`;
+}
+async function deletePhotos(ids){
+  ids = ids.filter(id => data.photos.some(x => x.id === id));
+  if(!ids.length) return;
+  if(!confirm(ids.length === 1 ? "Delete this photo? This can't be undone." : `Delete ${ids.length} photos? This can't be undone.`)) return;
+  let failed = 0;
+  for(const id of ids){
+    const rec = data.photos.find(x => x.id === id);
+    try { await run(sb.from("records").delete().eq("id", id)); await removeFiles(rec && rec.files).catch(() => {}); photoPicked.delete(id); }
+    catch(e){ failed++; }
+  }
+  await loadAll();
+  toast(failed ? `Deleted ${ids.length - failed}; ${failed} couldn't be deleted.` : ids.length === 1 ? "Photo deleted." : `${ids.length} photos deleted.`);
 }
 function openPhotoUpload(){
   const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
@@ -1683,8 +1709,8 @@ const compAdj = c => (c.adjustment !== "" && c.adjustment != null && num(c.soldP
 const inEstimate = c => c.status === "Sold" && c.include !== "No" && num(c.soldPrice) > 0;
 const isPdfFile = f => /pdf/i.test(f.type || "") || /\.pdf$/i.test(f.name || "");
 const isImgFile = f => (f.type || "").startsWith("image/");
-const compFileKind = f => f.kind || (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo");
-const compPhotos = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) !== "floor");
+const compFileKind = f => (f.kind && f.kind !== "doc" ? f.kind : null) || (isImgFile(f) ? (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo") : "doc");
+const compPhotos = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "photo");
 const compFloors = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "floor");
 const lotText = c => num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(1)} × ${num(c.lotDepth) ? +num(c.lotDepth).toFixed(1) : "?"} ft` : "";
 const parkText = c => [num(c.parking) ? `${num(c.parking)} space${num(c.parking) > 1 ? "s" : ""}` : (c.parking === 0 ? "No parking" : ""), c.garage && c.garage !== "None" ? `${c.garage.toLowerCase()} garage${num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : ""}` : (c.garage === "None" ? "no garage" : "")].filter(Boolean).join(", ");
@@ -1923,7 +1949,7 @@ function vCompDetail(c){
     ${photos.length > 1 || (photos.length && !cover) ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
     <div class="group"><h3>Floor plans <span class="meta">${floors.length || ""}</span></h3>${floors.length ? gallery(floors, "photos") : `<p class="meta">No floor plans yet. Upload them by editing this comparable, or open the listing pages below and save the floor-plan page.</p>`}</div>
     ${c.remarks ? `<div class="group"><h3>Listing description</h3><p class="notes" style="max-width:75ch">${esc(c.remarks)}</p></div>` : ""}
-    ${pdfs.length ? `<div class="group"><h3>MLS listing sheet</h3>${filesHTML(pdfs)}<button class="btn noprint" style="margin-top:10px" data-renderpdf="${esc(c.id)}">Show the listing pages here</button><div id="pdfpages" style="display:grid;gap:14px;margin-top:12px"></div></div>` : ""}
+    ${pdfs.length ? `<div class="group"><h3>MLS listings and documents</h3>${filesHTML(pdfs)}<button class="btn noprint" style="margin-top:10px" data-renderpdf="${esc(c.id)}">Show the listing pages here</button><div id="pdfpages" style="display:grid;gap:14px;margin-top:12px"></div></div>` : ""}
     ${others.length ? `<div class="group"><h3>Other files</h3>${filesHTML(others)}</div>` : ""}`;
 }
 async function renderCompPdfs(id){
@@ -1958,7 +1984,7 @@ async function saveRenderedPage(btn){
 }
 
 // ---- Inbox ----
-const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
+const DESTS = [["invoices","Expenses (invoice)"],["quotes","Quotes"],["plans","Plans"],["compNew","Comparables: new comparable"],["compAdd","Comparables: add to one"],["photos","Photos"],["documents","Documents"],["research","Research"],["keep","Keep with the email"]];
 const DEST_NAME = Object.fromEntries(DESTS);
 function emailAddr(m){ return lc((m.forwardedFrom && m.forwardedFrom.email) || m.from); }
 function emailContact(m){ const e = emailAddr(m); return data.contacts.find(k => lc(k.email) === e) || null; }
@@ -1972,7 +1998,27 @@ function emailCompany(m){
   return co ? co.name : "";
 }
 function emailWho(m){ const k = emailContact(m); return k ? k.name : ((m.forwardedFrom && (m.forwardedFrom.name || m.forwardedFrom.email)) || m.fromName || m.from); }
+function compKey(addr){ const mm = lc(addr).replace(/[.,]/g, " ").match(/^\s*(\d+[a-z]?)\s+([a-z'’\-]+)/); return mm ? mm[1] + " " + mm[2] : ""; }
+function fileAddrKey(f){ const mm = String(f && f.name || "").toLowerCase().match(/(?:^|[^\d])(\d{1,5}[a-z]?)[\s_\-]+([a-z'’]{3,})/); return mm && !/^(page|rev|copy|img|dsc|photo|image)$/.test(mm[2]) ? mm[1] + " " + mm[2] : ""; }
+// Which comparable a file belongs to: the address in the file's own name wins; otherwise the email, if it mentions just one
+function compForFile(m, f){
+  const fk = fileAddrKey(f);
+  if(fk) return data.comps.find(c => compKey(c.address) === fk) || null;
+  const t = lc([m.subject, (m.body || "").slice(0, 4000)].join(" ")).replace(/[_\-.,]+/g, " ").replace(/\s+/g, " ");
+  const hits = data.comps.filter(c => { const k = compKey(c.address); return k && t.includes(k); });
+  return hits.length === 1 ? hits[0] : null;
+}
+function compForEmail(m, f){
+  const t = lc([m.subject, f ? f.name : (m.files || []).map(x => x.name).join(" "), (m.body || "").slice(0, 4000)].join(" ")).replace(/[_\-.,]+/g, " ").replace(/\s+/g, " ");
+  return data.comps.find(c => { const k = compKey(c.address); return k && t.includes(k); }) || null;
+}
+function isCompEmail(m){
+  const k = emailContact(m);
+  return (k && k.label === "Realtor") || !!compForEmail(m) || /\b(comps?|comparables?|mls|sold\s+(data|listing|price|for)|client\s+full|listing\s+sheet)\b/i.test([m.subject, (m.files || []).map(x => x.name).join(" "), (m.body || "").slice(0, 2000)].join(" "));
+}
+function compKindFor(f){ return isPdfFile(f) ? (/floor|plan|layout/i.test(f.name || "") ? "floor" : "listing") : (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo"); }
 function suggestDest(m, f){
+  if(isCompEmail(m)){ const c = compForFile(m, f); if(c) return "compAdd"; if(fileAddrKey(f)) return "compNew"; return data.comps.length && !isPdfFile(f) ? "compAdd" : "compNew"; }
   const n = lc((f.name || "") + " " + (m.subject || "")), t = f.type || "";
   if(t.startsWith("image/") || t.startsWith("video/")) return "photos";
   if(/invoice|\binv\b|\bbill\b|statement|receipt|payment due|amount due/.test(n)) return "invoices";
@@ -2010,16 +2056,98 @@ function vInbox(){
       ${m.body ? `<details style="margin-top:8px"><summary class="meta" style="cursor:pointer">Show message</summary><div class="notes" style="max-height:340px;overflow:auto;border-left:3px double var(--line);padding-left:10px">${esc(m.body)}</div></details>` : ""}
       ${files.length ? `<div style="margin-top:10px;border-top:1px solid var(--line)">${files.map((f, i) => `<div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);gap:8px">
           <a class="file" href="${esc(fileUrl(f.path) || "#")}" target="_blank" rel="noopener">${fileIcon(f.type)}<span>${esc(f.name)}</span></a>
-          ${f.filed ? `<span class="badge good">${f.filed === "keep" ? "Kept with email" : "Filed in " + esc(S[f.filed] ? S[f.filed].title : f.filed)}</span>` : canWrite ? `<div class="row" style="gap:6px"><select id="fd-${esc(m.id)}-${i}" aria-label="Where to file ${esc(f.name)}" style="border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px">${DESTS.map(([v, l]) => `<option value="${v}" ${v === suggestDest(m, f) ? "selected" : ""}>${l}</option>`).join("")}</select><button class="btn primary" style="padding:6px 12px" data-filein="${esc(m.id)}" data-idx="${i}">File</button></div>` : ""}
+          ${f.filed ? `<span class="badge good">${f.filed === "keep" ? "Kept with email" : "Filed in " + esc(S[f.filed] ? S[f.filed].title : f.filed)}</span>` : canWrite ? `<div class="row" style="gap:6px"><select id="fd-${esc(m.id)}-${i}" aria-label="Where to file ${esc(f.name)}" style="border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px">${DESTS.map(([v, l]) => `<option value="${v}" ${v === suggestDest(m, f) ? "selected" : ""}>${l}</option>`).join("")}</select>${compPickers(m, f, i)}<button class="btn primary" style="padding:6px 12px" data-filein="${esc(m.id)}" data-idx="${i}">File</button></div>` : ""}
         </div>`).join("")}</div>` : `<p class="meta" style="margin:8px 0 0">No attachments.</p>`}
       ${(m.uploadErrors || []).length ? `<p class="neg" style="margin:6px 0 0;font-size:14px">Couldn't import: ${m.uploadErrors.map(f => esc(f.name)).join(", ")}. Open the email in Gmail to get these.</p>` : ""}
-      ${canWrite ? `<div class="row" style="margin-top:10px">${m.conversationLogged ? `<span class="meta">Saved in Conversations</span>` : `<button class="btn" data-inboxconv="${esc(m.id)}">Save to conversations</button>`}<button class="btn" data-inboxdone="${esc(m.id)}">${m.status === "done" ? "Move back to new" : "Mark done"}</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}
+      ${canWrite ? `<div class="row" style="margin-top:10px">${m.conversationLogged ? `<span class="meta">Saved in Conversations</span>` : `<button class="btn" data-inboxconv="${esc(m.id)}">Save to conversations</button>`}${files.some(f => !f.filed) && isCompEmail(m) ? `<button class="btn primary" data-inboxcomp="${esc(m.id)}">File all to a comparable</button>` : ""}<button class="btn" data-inboxdone="${esc(m.id)}">${m.status === "done" ? "Move back to new" : "Mark done"}</button><button class="btn ghost danger" data-inboxdel="${esc(m.id)}">Delete</button></div>` : ""}
     </div>`;
   };
   return `<div class="viewhead"><div><h2>Inbox</h2><p>${S.inbox.blurb}</p></div></div>` + addrLine
     + chips("inbox", opts).replace(/>New</, `>New (${counts.New})<`).replace(/>Unknown senders</, `>Unknown senders (${held.length})<`)
     + (list.length ? `<div class="list1">${list.map(card).join("")}</div>` : `<p class="meta">${filters.inbox === "New" ? "You're all caught up." : "Nothing here."}</p>`);
 }
+const SEL_STYLE = "border:1px solid var(--line);background:var(--paper);border-radius:3px;padding:6px 8px;max-width:220px";
+function compOptions(selId){ return data.comps.slice().sort((a, b) => (a.address || "").localeCompare(b.address || "")).map(c => `<option value="${esc(c.id)}" ${c.id === selId ? "selected" : ""}>${esc(c.address)}</option>`).join(""); }
+function kindOptions(k){ return [["floor", "Floor plan"], ["photo", "Photo"], ["listing", "MLS listing or document"]].map(([v, l]) => `<option value="${v}" ${v === k ? "selected" : ""}>${l}</option>`).join(""); }
+function compPickers(m, f, i){
+  const show = suggestDest(m, f) === "compAdd";
+  const match = compForFile(m, f);
+  return `<span id="fx-${esc(m.id)}-${i}" class="row" style="gap:6px;${show ? "" : "display:none"}">
+    <select id="fc-${esc(m.id)}-${i}" aria-label="Which comparable" style="${SEL_STYLE}">${data.comps.length ? "" : `<option value="">No comparables yet</option>`}${compOptions(match && match.id)}</select>
+    <select id="fk-${esc(m.id)}-${i}" aria-label="What this file is" style="${SEL_STYLE}">${kindOptions(compKindFor(f))}</select></span>`;
+}
+async function inboxBlob(f){ const {data: blob, error} = await sb.storage.from(BUCKET).download(f.path); if(error) throw error; return new File([blob], f.name, {type: f.type || (isPdfFile(f) ? "application/pdf" : "application/octet-stream")}); }
+// Read an MLS listing PDF already in storage: listing details plus a cover image of page 1
+async function readListingFromStorage(f, wantCover){
+  let L = {}, extra = [];
+  try {
+    const file = await inboxBlob(f); const doc = await openPdfDoc(file);
+    const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
+    L = parseListing(lines.join("\n"));
+    if(wantCover){ const cv = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(cv); if(blob){ const r = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"})); r.kind = wantCover; extra.push(r); } }
+  } catch(e){}
+  return {L, extra};
+}
+// Turn one emailed file into the file records a comparable keeps (a floor-plan PDF also gets an image of its first page)
+async function compFilesFrom(f, kind){
+  const rec = {path: f.path, name: f.name, type: f.type, size: f.size, kind: kind === "listing" ? "doc" : kind};
+  if(isPdfFile(f) && kind === "floor"){ const {extra} = await readListingFromStorage(f, "floor"); return [rec, ...extra]; }
+  return [rec];
+}
+async function fileToComp(m, items, compId){
+  // items: [{f, idx, kind}]
+  const listing = items.find(x => isPdfFile(x.f) && x.kind === "listing");
+  let L = {}, cover = [];
+  if(listing){ toast("Reading the MLS listing…"); const r = await readListingFromStorage(listing.f, compId ? "" : "photo"); L = r.L; cover = r.extra; }
+  let recs = [];
+  for(const x of items) recs = recs.concat(await compFilesFrom(x.f, x.kind));
+  let id = compId, filledNote = "";
+  if(compId){
+    const c = data.comps.find(z => z.id === compId); if(!c) throw new Error("missing");
+    const fill = {}; Object.keys(L).forEach(k => { if(!k.startsWith("__") && (c[k] === undefined || c[k] === "" || c[k] === null)) fill[k] = L[k]; });
+    if(Object.keys(fill).length) filledNote = ` and filled in ${Object.keys(fill).length} missing detail${Object.keys(fill).length > 1 ? "s" : ""} from the listing`;
+    await updRec(c, {...fill, ...(Object.keys(fill).length ? {needsReview: true} : {}), files: [...(c.files || []), ...recs]});
+  } else {
+    const body = {status: "Sold", include: "Yes", ...L, files: [...recs, ...cover], needsReview: true, notes: "From email: " + m.subject, created: Date.now(), updated: Date.now()};
+    if(!body.address){ const k = emailContact(m); body.address = (m.subject || "").replace(/^\s*(re|fwd?|fw)\s*:\s*/i, "").slice(0, 80) || "New comparable"; }
+    id = await insertOne("comps", body);
+  }
+  await updRec(m, {files: m.files.map((x, i) => items.some(it => it.idx === i) ? {...x, filed: "comps"} : x)});
+  await loadAll();
+  return {id, filledNote, L};
+}
+function openFileAllToComp(id){
+  const m = data.inbox.find(x => x.id === id); if(!m) return;
+  const dlg = $("#dlg"); if(dlg.open){ dlg.onclose = null; dlg.close(); }
+  const match = compForEmail(m);
+  const files = (m.files || []).map((f, i) => ({f, i})).filter(x => !x.f.filed);
+  dlg.innerHTML = `<form id="facForm" method="dialog">
+    <div class="m-head"><h2>File to a comparable</h2><button type="button" class="btn ghost" id="facClose">Close</button></div>
+    <div class="m-body">
+      <p class="f meta" style="margin:0">From ${esc(emailWho(m))}: ${esc(m.subject)}</p>
+      <div class="f"><label for="facComp">Comparable</label><select id="facComp"><option value="">New comparable${files.some(x => isPdfFile(x.f)) ? " (details read from the MLS listing)" : ""}</option>${compOptions(match && match.id)}</select></div>
+      <div class="f"><label>Files</label>${files.map(x => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0;gap:8px"><label class="row" style="gap:8px;font-variant:normal;letter-spacing:0;color:var(--ink)"><input type="checkbox" checked data-fac="${x.i}"> ${fileIcon(x.f.type)} ${esc(x.f.name)}</label><select data-fack="${x.i}" style="${SEL_STYLE}">${kindOptions(compKindFor(x.f))}</select></div>`).join("")}</div>
+      <p class="err f" id="facErr" hidden></p>
+    </div>
+    <div class="m-foot"><span></span><div class="row"><button type="button" class="btn" id="facCancel">Cancel</button><button type="submit" class="btn primary" id="facSave">File to comparable</button></div></div></form>`;
+  const close = () => dlg.close();
+  $("#facClose").onclick = close; $("#facCancel").onclick = close;
+  $("#facForm").onsubmit = async e => {
+    e.preventDefault();
+    const items = [...dlg.querySelectorAll("[data-fac]")].filter(c => c.checked).map(c => { const i = +c.dataset.fac; return {f: m.files[i], idx: i, kind: dlg.querySelector(`[data-fack="${i}"]`).value}; });
+    if(!items.length){ const er = $("#facErr"); er.hidden = false; er.textContent = "Choose at least one file."; return; }
+    const btn = $("#facSave"); btn.disabled = true; btn.textContent = "Filing…";
+    try {
+      const compId = $("#facComp").value;
+      const r = await fileToComp(m, items, compId);
+      close();
+      view = "comps"; compDetail = r.id; render(); window.scrollTo(0, 0);
+      toast(compId ? `Added ${items.length} file${items.length > 1 ? "s" : ""}${r.filledNote}.` : "New comparable created. Check its details.");
+    } catch(err){ btn.disabled = false; btn.textContent = "Try again"; }
+  };
+  dlg.showModal();
+}
+
 async function fileFromInbox(id, idx){
   const m = data.inbox.find(x => x.id === id); if(!m) return;
   const f = (m.files || [])[idx]; if(!f) return;
@@ -2028,6 +2156,16 @@ async function fileFromInbox(id, idx){
   const k = emailContact(m), company = emailCompany(m) || emailWho(m);
   const mark = async col => { await updRec(m, {files: m.files.map((x, i) => i === idx ? {...x, filed: col} : x)}); await loadAll(); };
   if(dest === "keep"){ await mark("keep"); return; }
+  if(dest === "compNew" || dest === "compAdd"){
+    const compId = dest === "compAdd" ? (document.getElementById(`fc-${id}-${idx}`) || {}).value || "" : "";
+    if(dest === "compAdd" && !compId){ toast("Choose which comparable, or pick \u201cnew comparable\u201d."); return; }
+    const kind = dest === "compAdd" ? (document.getElementById(`fk-${id}-${idx}`) || {}).value || compKindFor(f) : (isPdfFile(f) ? "listing" : compKindFor(f));
+    const r = await fileToComp(m, [{f, idx, kind}], compId);
+    const c = data.comps.find(x => x.id === r.id);
+    toast(compId ? `Added to ${c ? c.address : "the comparable"}${r.filledNote}.` : "New comparable created. Check its details.");
+    if(!compId && c) openForm("comps", c, {__note: listingNote(r.L, f.name)});
+    return;
+  }
   if(dest === "invoices"){
     toast("Reading the invoice…");
     let parsed = {};
@@ -2150,6 +2288,7 @@ const titleCase = s => s.replace(/\b\w/g, c => c.toUpperCase());
 function guessLabel(text){
   const t = text.toLowerCase();
   if(/architect|\boaa\b|mraic/.test(t)) return "Architect";
+  if(/realtor|real estate|realty|sales representative|broker of record/.test(t)) return "Realtor";
   if(/survey|\bols\b|land information|topograph|boundary/.test(t)) return "Surveyor";
   if(/engineer|p\.?\s?eng|structural/.test(t)) return "Engineer";
   if(/interior|design|arido|decorat/.test(t)) return "Designer";
@@ -2516,9 +2655,18 @@ async function starter(kind){
 
 // ---------- events ----------
 document.addEventListener("click", e => {
+  if(photoSelect && view === "photos"){
+    const tile = e.target.closest(".tile[data-pid]");
+    if(tile){ e.preventDefault(); const id = tile.dataset.pid; photoPicked.has(id) ? photoPicked.delete(id) : photoPicked.add(id); render(); return; }
+  }
+  const dp = e.target.closest("[data-delphoto]");
+  if(dp){ e.preventDefault(); deletePhotos([dp.dataset.delphoto]).catch(() => toast("Couldn't delete. Try again.")); return; }
+  if(e.target.closest("[data-photoselect]")){ photoSelect = !photoSelect; photoPicked.clear(); render(); return; }
+  if(e.target.closest("[data-photoselall]")){ document.querySelectorAll("#photoGrid .tile[data-pid]").forEach(t => photoPicked.add(t.dataset.pid)); render(); return; }
+  if(e.target.closest("[data-photodelsel]")){ deletePhotos([...photoPicked]).then(() => { if(!photoPicked.size){ photoSelect = false; render(); } }).catch(() => toast("Couldn't delete. Try again.")); return; }
   if(e.target.closest("[data-stop]")) return;
   const v = e.target.closest("[data-view]");
-  if(v){ view = v.dataset.view; compareTrade = null; compDetail = null; render(); window.scrollTo(0, 0); return; }
+  if(v){ view = v.dataset.view; compareTrade = null; compDetail = null; photoSelect = false; photoPicked.clear(); render(); window.scrollTo(0, 0); return; }
   const cmpB = e.target.closest("[data-compare]");
   if(cmpB){ compareTrade = cmpB.dataset.compare || null; render(); window.scrollTo(0, 0); return; }
   const acc = e.target.closest("[data-accept]");
@@ -2558,6 +2706,8 @@ document.addEventListener("click", e => {
   if(ck){ const [cid, ix] = ck.dataset.compkind.split("|"); const c = data.comps.find(x => x.id === cid); if(c){ const files = (c.files || []).map((f, i) => i === +ix ? {...f, kind: compFileKind(f) === "floor" ? "photo" : "floor"} : f); updRec(c, {files}).then(loadAll); } return; }
   const fi2 = e.target.closest("[data-filein]");
   if(fi2){ fileFromInbox(fi2.dataset.filein, +fi2.dataset.idx).catch(() => toast("Couldn't file it. Try again.")); return; }
+  const iac = e.target.closest("[data-inboxcomp]");
+  if(iac){ openFileAllToComp(iac.dataset.inboxcomp); return; }
   const ic = e.target.closest("[data-inboxconv]");
   if(ic){ inboxToConversation(ic.dataset.inboxconv).catch(() => toast("Couldn't save. Try again.")); return; }
   const idn = e.target.closest("[data-inboxdone]");
@@ -2610,10 +2760,11 @@ document.addEventListener("input", e => {
   const none = $("#researchNone"); if(none) none.hidden = shown > 0;
 });
 document.addEventListener("change", e => {
+  if(/^fd-/.test(e.target.id || "")){ const fx = document.getElementById("fx-" + e.target.id.slice(3)); if(fx) fx.style.display = e.target.value === "compAdd" ? "" : "none"; return; }
   if(e.target.id === "compUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleCompUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
   if(e.target.id === "compSort"){ compSort = e.target.value; render(); return; }
   if(e.target.id === "quoteUpload"){ const fl = [...e.target.files]; e.target.value = ""; handleQuoteUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); return; }
-  if(e.target.id === "navSelect"){ view = e.target.value; compareTrade = null; render(); window.scrollTo(0, 0); return; }
+  if(e.target.id === "navSelect"){ view = e.target.value; compareTrade = null; compDetail = null; photoSelect = false; photoPicked.clear(); render(); window.scrollTo(0, 0); return; }
   if(e.target.id === "invUpload"){ const fl = e.target.files; handleInvoiceUpload(fl).catch(() => toast("Something went wrong uploading. Try again.")); }
 });
 document.addEventListener("submit", async e => {
