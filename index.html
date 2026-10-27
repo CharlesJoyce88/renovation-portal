@@ -461,6 +461,7 @@ const S = {
     {k:"bathrooms",l:"Bathrooms",t:"number",half:1},
     {k:"sqft",l:"Square feet (above grade)",t:"number",half:1},
     {k:"sqftNote",l:"Square footage note",t:"text",half:1,ph:"e.g. MLS range 1,500–2,000"},
+    {k:"sqftBelow",l:"Finished square feet below grade",t:"number",half:1},
     {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
     {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
     {k:"parking",l:"Parking spaces",t:"number",half:1},
@@ -473,6 +474,8 @@ const S = {
     {k:"similarity",l:"How similar to ours",t:"select",o:["Very similar","Similar","Somewhat similar","Not very similar"],half:1},
     {k:"keyFeatures",l:"Key features (one per line)",t:"textarea"},
     {k:"remarks",l:"Listing description",t:"textarea"},
+    {k:"rooms",l:"Room sizes and washrooms",t:"textarea"},
+    {k:"history",l:"Sales history",t:"textarea"},
     {k:"adjustment",l:"Adjustment to match our house (+ if ours is better, − if this one is better)",t:"money",half:1},
     {k:"notes",l:"Your notes: how it compares to ours",t:"textarea"},
     {k:"files",l:"MLS listing sheet, photos and floor plans",t:"files"}]},
@@ -484,6 +487,7 @@ const S = {
     {k:"bedrooms",l:"Bedrooms (after the renovation)",t:"text",half:1},
     {k:"bathrooms",l:"Bathrooms (after the renovation)",t:"number",half:1},
     {k:"sqft",l:"Square feet above grade (after the addition)",t:"number",half:1},
+    {k:"sqftBelow",l:"Finished square feet below grade",t:"number",half:1},
     {k:"lotFrontage",l:"Lot frontage (feet)",t:"number",half:1},
     {k:"lotDepth",l:"Lot depth (feet)",t:"number",half:1},
     {k:"parking",l:"Parking spaces",t:"number",half:1},
@@ -1712,14 +1716,16 @@ const isImgFile = f => (f.type || "").startsWith("image/");
 const compFileKind = f => (f.kind && f.kind !== "doc" ? f.kind : null) || (isImgFile(f) ? (/floor|plan|layout/i.test(f.name || "") ? "floor" : "photo") : "doc");
 const compPhotos = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "photo");
 const compFloors = c => (c.files || []).map((f, i) => ({...f, i})).filter(f => isImgFile(f) && compFileKind(f) === "floor");
-const lotText = c => num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(1)} × ${num(c.lotDepth) ? +num(c.lotDepth).toFixed(1) : "?"} ft` : "";
+const belowText = c => num(c.sqftBelow) ? `${num(c.sqftBelow).toLocaleString()} sq ft` : "";
+const totalSqft = c => num(c.sqft) + num(c.sqftBelow);
+const lotText = c => num(c.lotFrontage) ? `${+num(c.lotFrontage).toFixed(2)} × ${num(c.lotDepth) ? +num(c.lotDepth).toFixed(2) : "?"} ft` : "";
 const parkText = c => [num(c.parking) ? `${num(c.parking)} space${num(c.parking) > 1 ? "s" : ""}` : (c.parking === 0 ? "No parking" : ""), c.garage && c.garage !== "None" ? `${c.garage.toLowerCase()} garage${num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : ""}` : (c.garage === "None" ? "no garage" : "")].filter(Boolean).join(", ");
 function compThumb(c, h){
   const p = compPhotos(c)[0]; const u = p && fileUrl(p.path);
   return u && u !== "#" ? `<img src="${esc(u)}" alt="" loading="lazy" style="width:100%;height:${h}px;object-fit:cover;display:block;border-radius:2px">` : `<div style="height:${h}px;display:flex;align-items:center;justify-content:center;background:var(--chip);border-radius:2px;font-size:${Math.round(h / 3)}px" aria-hidden="true">🏠</div>`;
 }
 
-const FEATURE_WORDS = [["Renovated", /renovat|re-?done|fully updated|gut(ted)?\b/i], ["Addition", /\baddition\b/i], ["Finished basement", /finished\s+(lower|basement)|basement\s+(is\s+)?finished/i], ["Separate entrance", /separate\s+(side\s+)?entrance/i], ["Basement apartment or income suite", /(basement|lower)[\s-]+(apartment|suite|unit)|income|in-?law|nanny\s+suite|legal\s+(duplex|second|2nd)/i], ["Laneway or garden suite", /laneway\s+(house|suite)|garden\s+suite/i], ["Parking", /\bparking\b|private\s+drive/i], ["Garage", /garage/i], ["Original period details", /original\s+(details|trim|millwork|woodwork|mouldings?|doors?|floors?)|stained\s+glass|leaded\s+glass|period\s+details|character/i], ["Fireplace", /fireplace/i], ["Hardwood floors", /hardwood/i], ["Updated kitchen", /(chef'?s|custom|new|updated|renovated|gourmet)\s+kitchen|kitchen\s+(reno|renovat)/i], ["Primary ensuite", /ensuite|en-suite/i], ["Walk-out", /walk-?\s?out/i], ["Deck or patio", /\bdeck\b|patio|terrace/i], ["Large or south-facing garden", /(south|west)[\s-]+facing|deep\s+lot|large\s+(garden|yard|backyard)|private\s+(garden|yard|backyard)/i], ["Central air", /central\s+(air|a\/?c)|\bcac\b/i], ["Heat pump", /heat\s+pump/i], ["Heated floors", /heated\s+floors?|radiant/i], ["Skylights", /skylight/i], ["High ceilings", /high\s+ceilings?|\d+['’]\s*ceilings?|soaring/i], ["Third-floor retreat", /third[\s-]floor|3rd\s+floor/i], ["Pot lights", /pot\s+lights?/i], ["EV charger", /\bev\b\s+charg|electric\s+vehicle/i], ["Walk to transit", /subway|ttc|go\s+station|streetcar|transit/i], ["Top school district", /school/i]];
+const FEATURE_WORDS = [["Renovated", /(?<!un)renovated|re-?done|fully updated|gut(ted)?\b/i], ["Addition", /\baddition\b/i], ["Finished basement", /(?<!partially\s)(?<!partly\s)finished\s+(lower|basement)|basement\s+(is\s+)?(fully\s+)?finished/i], ["Partially finished basement", /(partially|partly)\s+finished\s+(lower|basement)/i], ["Private balcony", /balcony/i], ["Walk-in closet", /walk-?in\s+closet/i], ["Mudroom", /mud\s?room/i], ["Basement kitchenette", /kitchenette/i], ["Separate entrance", /separate\s+(side\s+)?entrance/i], ["Basement apartment or income suite", /(basement|lower)[\s-]+(apartment|suite|unit)|income|in-?law|nanny\s+suite|legal\s+(duplex|second|2nd)/i], ["Laneway or garden suite", /(?<!build\s(?:a\s)?(?:garage\sor\s)?(?:a\s)?)\b(?:existing|legal|built|rented)\s+(?:laneway|garden)\s+(?:house|suite)/i], ["Laneway house potential", /(could|can|potential|opportunity|room\s+to|build)[^.]{0,60}laneway\s+(house|suite)|laneway\s+(house|suite)[^.]{0,30}(potential|possib)/i], ["Original period details", /original\s+(details|trim|millwork|woodwork|mouldings?|doors?|floors?)|stained\s+glass|leaded\s+glass|period\s+details|character/i], ["Fireplace", /fireplace/i], ["Hardwood floors", /hardwood/i], ["Updated kitchen", /(chef'?s|custom|new|updated|renovated|gourmet)\s+kitchen|kitchen\s+(reno|renovat)/i], ["Primary ensuite", /ensuite|en-suite/i], ["Walk-out", /walk-?\s?out/i], ["Deck or patio", /\bdeck\b|patio|terrace/i], ["Large or south-facing garden", /(south|west)[\s-]+facing|deep\s+lot|large\s+(garden|yard|backyard)|private\s+(garden|yard|backyard)/i], ["Central air", /central\s+(air|a\/?c)|\bcac\b/i], ["Heat pump", /heat\s+pump/i], ["Heated floors", /heated\s+floors?|radiant/i], ["Skylights", /skylight/i], ["High ceilings", /high\s+ceilings?|\d+['’]\s*ceilings?|soaring/i], ["Third-floor retreat", /third[\s-]floor|3rd\s+floor/i], ["Pot lights", /pot\s+lights?/i], ["EV charger", /\bev\b\s+charg|electric\s+vehicle/i], ["Walk to transit", /subway|ttc|go\s+station|streetcar|transit/i], ["Top school district", /school/i]];
 
 function parseListing(raw){
   const text = String(raw || "").replace(/\r/g, "");
@@ -1727,23 +1733,39 @@ function parseListing(raw){
   const out = {};
   const grab = re => { const m = flat.match(re); return m ? String(m[1]).trim() : ""; };
   const grabT = re => { const m = text.match(re); return m ? String(m[1]).trim() : ""; };
+  const SEP = String.raw`(?:\s*:\s*|\s{2,}|\s+(?=[A-Z0-9$]))`;
+  // Header grids like "4  4  7+1  2  1500-2000  8" followed by "BEDS  BATHS  ROOMS  TOT PRK SPCS  SQFT  DOM"
+  const grid = {};
+  const tl = text.split("\n");
+  for(let i = 1; i < tl.length; i++){
+    if(!/\bBEDS\b|\bBATHS\b|\bDOM\b/.test(tl[i]) || /\d/.test(tl[i])) continue;
+    const labels = tl[i].trim().split(/\s{2,}/), vals = tl[i - 1].trim().split(/\s{2,}/);
+    if(labels.length === vals.length) labels.forEach((l, j) => { grid[l.toUpperCase()] = vals[j]; });
+  }
   const numOf = v => { if(v === "" || v == null) return ""; const n = parseFloat(String(v).replace(/[^\d.]/g, "")); return isNaN(n) ? "" : n; };
   const priceOf = re => { const m = flat.match(re); if(!m) return ""; const n = +m[1].replace(/[^\d]/g, ""); return n >= 50000 ? n : ""; };
   const stop = String.raw`(?=\s{2,}|\n|$)`;
-  out.mls = grab(/MLS(?:®)?\s*(?:#|no\.?|number)?\s*[:#]?\s*([A-Z]{0,2}\d{6,9})\b/i);
+  out.mls = grab(/MLS(?:®)?\s*(?:#|no\.?|number)?\s*[:#]?\s*([A-Z]{0,2}\d{6,9})\b/i) || grab(/\b([A-Z]{1,2}\d{7,8})\b/);
   out.soldPrice = priceOf(/\b(?:Sold\s+Price|Sale\s+Price|Sold\s+for|Sold|SP)\s*[:\-]?\s*\$\s?([\d,]{5,})/i) || priceOf(/\bSold(?:\s+Price)?\s*[:\-]\s*([\d,]{6,})/i);
   out.listPrice = priceOf(/\b(?:List(?:ing)?\s+Price|Asking(?:\s+Price)?|Listed\s+(?:at|for)|Original\s+Price|LP)\s*[:\-]?\s*\$?\s?([\d,]{5,})/i) || priceOf(/\bList\s*[:\-]?\s*\$\s?([\d,]{5,})/i);
-  const sd = flat.match(/\b(?:Sold|Closing|Closed|Contract|Sale)\s+Date\s*[:\-]?\s*([^\n]{0,32})/i) || flat.match(/\bSold\s+(?:on\s+)?([A-Z][a-z]{2,8}\.?\s+\d{1,2},?\s+20\d\d)/);
+  const sd = flat.match(/\bSold\s+Date\s*[:\-]?\s*([^\n]{0,32})/i) || flat.match(/\bSold\s+(?:on\s+)?([A-Z][a-z]{2,8}\.?\s+\d{1,2},?\s+20\d\d)/) || flat.match(/\b(?:Closed|Sale)\s+Date\s*[:\-]?\s*([^\n]{0,32})/i);
   if(sd) out.soldDate = findDate(sd[1]);
-  out.dom = numOf(grab(/\b(?:DOM|Days\s+on\s+Market)\s*[:\-]?\s*(\d{1,4})/i));
-  out.bedrooms = (grab(/\b(?:Bedrooms?|Beds?|Bdrms?|Bed\s+Rooms?)\s*:\s*(\d{1,2}(?:\s*\+\s*\d)?)\b/i) || grab(/\b(\d{1,2}(?:\s*\+\s*\d)?)\s*(?:Bedrooms?|Beds?|Bdrms?)\b/i) || grab(/\b(?:Bedrooms?|Beds?|Bdrms?)\s+(\d{1,2}(?:\s*\+\s*\d)?)\b/i)).replace(/\s+/g, "");
-  out.bathrooms = numOf(grab(/\b(?:Washrooms?|Bathrooms?|Baths?|Wshrms?)\s*:\s*(\d{1,2}(?:\.\d)?)\b/i) || grab(/\b(\d{1,2}(?:\.\d)?)\s*(?:Washrooms?|Bathrooms?|Baths?)\b/i) || grab(/\b(?:Washrooms?|Bathrooms?|Baths?)\s+(\d{1,2}(?:\.\d)?)\b/i));
+  out.dom = numOf(grab(/\b(?:DOM|Days\s+on\s+Market)\s*[:\-]?\s*(\d{1,4})\b(?!\s*(?:BEDS|BATHS))/i) || grid.DOM);
+  out.bedrooms = (grab(/\b(?:Bedrooms?|Beds?|Bdrms?|Bed\s+Rooms?)\s*:\s*(\d{1,2}(?:\s*\+\s*\d)?)\b/i) || grabT(/\bBEDROOMS\s{2,}(\d{1,2}(?:\s*\+\s*\d)?)\b/i) || grid.BEDS || grab(/\b(\d{1,2}(?:\s*\+\s*\d)?)\s*(?:Bedrooms?|Beds?|Bdrms?)\b/i) || grab(/\b(?:Bedrooms?|Beds?|Bdrms?)\s+(\d{1,2}(?:\s*\+\s*\d)?)\b/i)).replace(/\s+/g, "");
+  out.bathrooms = numOf(grab(/\b(?:Washrooms?|Bathrooms?|Baths?|Wshrms?)\s*:\s*(\d{1,2}(?:\.\d)?)\b/i) || grabT(/\bWASHROOMS\s{2,}(\d{1,2}(?:\.\d)?)\b/i) || grid.BATHS || grab(/\b(\d{1,2}(?:\.\d)?)\s*(?:Washrooms?|Bathrooms?|Baths?)\b/i) || grab(/\b(?:Washrooms?|Bathrooms?|Baths?)\s+(\d{1,2}(?:\.\d)?)\b/i));
   const sq = flat.match(/(?:Approx\.?\s*)?(?:Square\s*F(?:ee|oo)t(?:age)?|Sq\.?\s*F(?:ee)?t\.?|SqFt|Living\s+Area|Size)\s*(?:\(\s*sq\.?\s*ft\.?\s*\))?\s*[:\-]?\s*([\d,]{3,5})(?:\s*(?:-|–|to)\s*([\d,]{3,5}))?/i) || flat.match(/\b([\d,]{3,5})(?:\s*(?:-|–)\s*([\d,]{3,5}))?\s*(?:sq\.?\s*ft|square\s+feet|sf)\b/i);
   if(sq){ const a = +sq[1].replace(/,/g, ""), b = sq[2] ? +sq[2].replace(/,/g, "") : 0;
     if(a >= 300 && a <= 15000){ if(b > a){ out.sqft = Math.round((a + b) / 2); out.sqftNote = `MLS range ${a.toLocaleString()}–${b.toLocaleString()} (midpoint used)`; } else out.sqft = a; } }
+  // PropTx sheets give the exact above-grade finished area, which beats a range
+  const ag = flat.match(/\bABOVE\s+GRADE(?:\s+FINISHED\s+SQ\.?\s*FT\.?)?\s*[:\-]?\s*([\d,]{3,5})\b/i);
+  const bg = flat.match(/\bBELOW\s+GRADE(?:\s+FINISHED\s+SQ\.?\s*FT\.?)?\s*[:\-]?\s*([\d,]{2,5})\b/i);
+  const agSrc = text.match(/\bABOVE\s+GRADE\s{2,}(Plans|Survey|Appraisal|Builder|Owner|Other|MPAC|Floor\s*plans?|LBO)/i);
+  if(ag){ const v = +ag[1].replace(/,/g, ""); if(v >= 300 && v <= 15000){ const range = sq && sq[2] ? `MLS range ${(+sq[1].replace(/,/g, "")).toLocaleString()}–${(+sq[2].replace(/,/g, "")).toLocaleString()}` : ""; out.sqft = v; out.sqftNote = [`Above-grade finished area${agSrc ? " (source: " + agSrc[1].toLowerCase() + ")" : ""}`, range].filter(Boolean).join(". ") + "."; } }
+  const bg2 = bg || flat.match(/\b(?:finished\s+)?(?:area\s+)?below\s+grade(?:\s+(?:finished\s+)?(?:area|sq\.?\s*ft\.?|square\s+feet))?\s*[:\-]?\s*([\d,]{2,5})\b/i) || flat.match(/\bbasement\s+(?:finished\s+)?(?:area|sq\.?\s*ft\.?)\s*[:\-]?\s*([\d,]{2,5})\b/i);
+  if(bg2){ const v = +bg2[1].replace(/,/g, ""); if(v >= 50 && v <= 8000) out.sqftBelow = v; }
   const lot = flat.match(/\bLot(?:\s+Size|\s+Dimensions|\s+Frontage)?\s*[:\-]?\s*([\d.]+)\s*(ft\.?|feet|'|m\b|metres?|meters?)?\s*[x×X]\s*([\d.]+)\s*(ft\.?|feet|'|m\b|metres?|meters?)?/i) || flat.match(/\b([\d.]+)\s*(ft|')?\s*[x×X]\s*([\d.]+)\s*(Feet|Ft|')/i);
-  if(lot){ const metres = /^m/i.test(lot[2] || lot[4] || ""); const k = metres ? 3.28084 : 1; out.lotFrontage = +(+lot[1] * k).toFixed(1); out.lotDepth = +(+lot[3] * k).toFixed(1); }
-  out.parking = numOf(grab(/\bTotal\s+Park(?:ing)?\s*(?:Spaces|Spcs|Spots)?\s*[:\-]?\s*(\d{1,2})\b/i) || grab(/\bPark(?:ing)?\s*(?:Spaces|Spcs|Spots)\s*[:\-]?\s*(\d{1,2})\b/i) || grab(/\bParking\s*[:\-]?\s*(\d{1,2})\b/i));
+  if(lot){ const metres = /^m/i.test(lot[2] || lot[4] || ""); const k = metres ? 3.28084 : 1; out.lotFrontage = +(+lot[1] * k).toFixed(2); out.lotDepth = +(+lot[3] * k).toFixed(2); }
+  out.parking = numOf(grab(/\bTotal\s+Park(?:ing)?\s*(?:Spaces|Spcs|Spots)?\s*[:\-]?\s*(\d{1,2})\b/i) || grid["TOT PRK SPCS"] || grab(/\bPark(?:ing)?\s*(?:Spaces|Spcs|Spots)\s*[:\-]?\s*(\d{1,2})\b/i) || grab(/\bParking\s*[:\-]?\s*(\d{1,2})\b/i));
   const g = grab(/\bGarage(?:\s+Type)?\s*[:\-]?\s*(None|Detached|Det\.?|Attached|Att\.?|Built-?\s?In|Carport|Lane(?:way)?|Yes|No)\b/i);
   const gMap = {none: "None", no: "None", detached: "Detached", det: "Detached", "det.": "Detached", attached: "Attached", att: "Attached", "att.": "Attached", carport: "Carport", lane: "Laneway", laneway: "Laneway"};
   if(g) out.garage = gMap[g.toLowerCase()] || (/built/i.test(g) ? "Built-in" : /yes/i.test(g) ? "Detached" : "");
@@ -1754,31 +1776,58 @@ function parseListing(raw){
   if(ty){ const t = ty[1].toLowerCase(); out.propertyType = /semi/.test(t) ? "Semi-detached" : /^detached/.test(t) ? "Detached" : /row|town/.test(t) && !/condo/.test(t) ? "Row / townhouse" : /link/.test(t) ? "Link" : /condo/.test(t) ? "Condo townhouse" : "Duplex / multiplex"; }
   const st = flat.match(/\b(2\s*1\/2\s*-?\s*Storey|2\.5\s*-?\s*Storey|2\s*-?\s*Storey|3\s*-?\s*Storey|1\s*1\/2\s*-?\s*Storey|1\.5\s*-?\s*Storey|Bungalow-?\s?Raised|Bungaloft|Bungalow|Backsplit\s*\d?|Sidesplit\s*\d?)\b/i);
   if(st) out.style = st[1].replace(/\s*-?\s*Storey/i, "-storey").replace(/^2\s*1\/2|^2\.5/, "2½").replace(/^1\s*1\/2|^1\.5/, "1½").replace(/^(\w)/, m => m).toLowerCase().replace(/^b/, "B").replace(/^s/, "S");
-  out.era = grabT(new RegExp(String.raw`\b(?:Year\s+Built|Built\s+in|Approx\.?\s*Age)\s*[:\-]\s*([\w+\-\s]{2,15}?)` + stop, "i")) || grab(/\bBuilt\s+in\s+(\d{4})/i);
-  out.basement = grabT(new RegExp(String.raw`\bBasement\s*:\s*([^\n]{3,50}?)` + stop, "i"));
+  out.era = grabT(new RegExp(String.raw`\b(?:Year\s+Built|Built\s+in|Approx\.?\s*Age)` + SEP + String.raw`([\w+\-]{2,15}(?:\s[\w+\-]+)?)` + stop, "i")) || grab(/\bBuilt\s+in\s+(\d{4})/i);
+  out.basement = grabT(new RegExp(String.raw`^\s*Basement(?:\s*:\s*|\s{2,})([^\n]{3,50}?)` + stop, "im")) || grabT(new RegExp(String.raw`\bBasement\s*:\s*([^\n]{3,50}?)` + stop, "i"));
   const tx = flat.match(/\bTaxes\s*[:\-]?\s*\$?\s?([\d,]{3,6}(?:\.\d{2})?)/i); if(tx) out.taxes = +tx[1].replace(/,/g, "");
-  out.heating = [grabT(new RegExp(String.raw`\bHeat(?:ing)?(?:\s+Type)?\s*:\s*([^\n]{3,30}?)` + stop, "i")), grabT(new RegExp(String.raw`\b(?:A\/C|Air\s+Conditioning|Cooling)\s*:\s*([^\n]{2,25}?)` + stop, "i"))].filter(Boolean).join(", ");
-  out.area = grabT(new RegExp(String.raw`\b(?:Community|Neighbourhood|Neighborhood)\s*:\s*([^\n]{3,40}?)` + stop, "i"));
+  const hType = grabT(new RegExp(String.raw`\bHeat(?:ing)?(?:\s+Type)?(?:\s*:\s*|\s{2,})([^\n]{3,30}?)` + stop, "i"));
+  const hSrc = grabT(new RegExp(String.raw`\bHeating\s+Source(?:\s*:\s*|\s{2,})([^\n]{2,20}?)` + stop, "i"));
+  const ac = grabT(new RegExp(String.raw`\b(?:A\/C|Air\s+Conditioning|Cooling)(?:\s*:\s*|\s{2,})([^\n]{2,25}?)` + stop, "i"));
+  out.heating = [hType && hSrc && !hType.toLowerCase().includes(hSrc.toLowerCase()) ? `${hType}, ${hSrc.toLowerCase()}` : hType, ac && !/^none$/i.test(ac) ? ac.toLowerCase() : ""].filter(Boolean).join(", ").replace(/^(\w)/, m => m.toUpperCase());
+  out.area = grabT(new RegExp(String.raw`^\s*(?:Community|Neighbourhood|Neighborhood)(?:\s*:\s*|\s{2,})([^\n]{3,40}?)` + stop, "im")) || grabT(new RegExp(String.raw`\b(?:Community|Neighbourhood|Neighborhood)\s*:\s*([^\n]{3,40}?)` + stop, "i"));
   const ADDR = /\b\d{1,5}[A-Z]?\s+(?:[A-Z][\w'’.\-]*\s+){1,4}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Cres|Crescent|Dr|Drive|Pl|Place|Gdns|Gardens|Crt|Ct|Court|Lane|Ln|Way|Tr|Trail|Terr|Terrace|Pkwy|Parkway|Sq|Square|Circ|Circle|Grove|Grv|Park|Hts|Heights|Rdge|Ridge|Glen|Path|Row|Mews|Gate)\b\.?(?:\s+(?:E|W|N|S|East|West|North|South)\b)?/;
-  const am = text.match(ADDR); if(am) out.address = am[0].replace(/\s+/g, " ").trim();
+  const addrLine = text.split("\n").find(l => ADDR.test(l) && !/prepared|brokerage|suite\b|realty|phone|fax|printed|unit\s+\d|columbia\s+way|head\s+office/i.test(l));
+  const am = addrLine && addrLine.match(ADDR); if(am) out.address = am[0].replace(/\s+/g, " ").trim();
   const rm = text.match(/(?:Client\s+Remarks|Remarks\s+for\s+Clients|Public\s+Remarks|Property\s+Description|Description|About\s+this\s+(?:home|property))\s*[:\-]?\s*([\s\S]{20,2000}?)(?=\n\s*(?:Extras|Inclusions|Exclusions|Brokerage|Listing\s+Contracted|Contract\s+Date|Rooms?\b|Level\b)|$)/i);
   const ex = text.match(/\bExtras\s*[:\-]?\s*([\s\S]{5,1000}?)(?=\n\s*(?:Brokerage|Listing|Contract|Rooms?\b|Level\b)|$)/i);
   const remarks = [rm && rm[1], ex && "Extras: " + ex[1]].filter(Boolean).join("\n\n").replace(/[ \t]{2,}/g, " ").trim();
-  if(remarks) out.remarks = remarks.slice(0, 3000);
+  if(remarks) out.remarks = remarks.replace(/\n(?!\n)/g, " ").replace(/ {2,}/g, " ").slice(0, 3000);
+  // Room sizes, washrooms and sales history (PropTx and TRREB sheets)
+  const roomLines = [], washLines = [], histLines = [];
+  let mode = "";
+  for(const raw of tl){
+    const l = raw.trim();
+    if(/^ROOM\s+INFO\b/i.test(l)){ mode = "rooms"; continue; }
+    if(/^WASHROOM\s+INFO\b/i.test(l)){ mode = "wash"; continue; }
+    if(/^PROPERTY\s+HISTORY\b/i.test(l)){ mode = "hist"; continue; }
+    if(/^(INCLUSIONS|EXCLUSIONS|LISTING\s+CONTRACTED|SHOWING|=== end|CO-OP)\b/i.test(l)){ if(!/^=== end/.test(l) || mode !== "hist") mode = ""; continue; }
+    if(mode === "rooms"){ const r = l.match(/^(.+?)\s{2,}(Main|Ground|Lower|Bsmt|Basement|2nd|3rd|4th|Upper|Flat|In\s?Betwn|Sub-?Bsmt)\s{2,}([\d.]+\s*m\s*x\s*[\d.]+\s*m)?\s*(?:\(([\d.]+\s*ft\s*x\s*[\d.]+\s*ft)\))?\s*(.*)$/i); if(r) roomLines.push(`${r[1]} (${r[2]}): ${r[4] ? r[4].replace(/\s*ft\s*x\s*/i, " × ").replace(/\s*ft$/i, " ft") : r[3] || "size not given"}${r[5] ? ". " + r[5].trim() : ""}`); }
+    if(mode === "wash"){ const w = l.match(/^(\d+)\s{2,}(\d+)\s{2,}(\w+)/); if(w) washLines.push(`${w[1] === "1" ? "" : w[1] + " × "}${w[2]}-piece on ${w[3]}`); }
+    if(mode === "hist"){ const h = l.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s{2,}(Sold|Listed\s+for\s+Sale|Terminated|Expired|Price\s+Change|Leased|Suspended|Extended)\s{2,}(\$[\d,]+)/i); if(h) histLines.push(`${fmtHistDate(h[1])}: ${h[2].replace(/Listed for Sale/i, "Listed")} at ${h[3]}`); }
+  }
+  if(roomLines.length || washLines.length) out.rooms = [...roomLines, ...(washLines.length ? ["Washrooms: " + washLines.join(", ")] : [])].join("\n");
+  if(histLines.length) out.history = histLines.join("\n");
   const featSrc = [remarks, flat].join(" ");
   const feats = FEATURE_WORDS.filter(([, re]) => re.test(remarks || "")).map(([l]) => l);
-  if(out.basement && /finish/i.test(out.basement) && !feats.includes("Finished basement")) feats.push("Finished basement");
+  if(out.basement && /^(?!.*partial).*finish/i.test(out.basement) && !feats.includes("Finished basement")) feats.push("Finished basement");
+  if(out.basement && /partial/i.test(out.basement)){ const i = feats.indexOf("Finished basement"); if(i >= 0) feats.splice(i, 1); if(!feats.includes("Partially finished basement")) feats.push("Partially finished basement"); }
+  if(/\bFIREPLACE\/STV\s+Yes\b/i.test(flat) && !feats.includes("Fireplace")) feats.push("Fireplace");
+  if(num(out.parking)) feats.push(`Parking for ${num(out.parking)}${/\bDRIVE\s+Lane\b/i.test(flat) || /laneway\s+parking/i.test(flat) ? " (laneway)" : ""}`);
+  if(out.garage && out.garage !== "None") feats.push(`${out.garage} garage`);
   if(out.basement && /sep/i.test(out.basement) && !feats.includes("Separate entrance")) feats.push("Separate entrance");
   if(feats.length) out.keyFeatures = feats.join("\n");
-  out.status = out.soldPrice ? "Sold" : /\bterminated\b/i.test(flat) ? "Terminated" : /\bexpired\b/i.test(flat) ? "Expired" : /\bfor\s+sale\b|\bactive\b/i.test(flat) ? "Active" : "";
+  const listDate = flat.match(/\b(?:Contract|List(?:ing)?)\s+Date\s*[:\-]?\s*(\d{1,2}\/\d{1,2}\/\d{4}|[A-Z][a-z]{2,8}\.?\s+\d{1,2},?\s+20\d\d)/i);
+  const orig = priceOf(/\bOriginal\s+List(?:\s+Price)?\s*[:\-]?\s*\$?\s?([\d,]{5,})/i);
+  if(!out.history && (listDate || (orig && orig !== out.listPrice))) out.history = [listDate && `Listed ${fmtHistDate(listDate[1])}`, orig && orig !== out.listPrice && `Originally listed at $${orig.toLocaleString()}`].filter(Boolean).join("\n");
+  out.status = out.soldPrice || /\bSTATUS\s+SLD\b/.test(flat) ? "Sold" : /\bterminated\b/i.test(flat) ? "Terminated" : /\bexpired\b/i.test(flat) ? "Expired" : /\bfor\s+sale\b|\bactive\b/i.test(flat) ? "Active" : "";
   Object.keys(out).forEach(k => { if(out[k] === "" || out[k] == null) delete out[k]; });
   return out;
 }
+function fmtHistDate(s){ const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); const d = m ? (+m[1] > 12 ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`) : findDate(s); return d ? new Date(d + "T00:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}) : s; }
 function listingNote(L, src){
-  const got = [L.address && "address", L.soldPrice && "sold price", L.listPrice && "list price", L.soldDate && "sold date", L.bedrooms && "bedrooms", L.bathrooms && "bathrooms", L.sqft && "square feet", L.lotFrontage && "lot size", L.parking !== undefined && "parking", L.garage && "garage", L.keyFeatures && "key features"].filter(Boolean);
+  const got = [L.address && "address", L.soldPrice && "sold price", L.listPrice && "list price", L.soldDate && "sold date", L.bedrooms && "bedrooms", L.bathrooms && "bathrooms", L.sqft && "square feet", L.sqftBelow && "below-grade square feet", L.lotFrontage && "lot size", L.parking !== undefined && "parking", L.garage && "garage", L.keyFeatures && "key features"].filter(Boolean);
   if(!got.length) return `Couldn't read details from ${src}. If it's a photo, screenshot or scanned PDF, fill in the details yourself.`;
   const missing = ["address", "sold price", "square feet", "bedrooms", "bathrooms", "lot size"].filter(x => !got.includes(x));
-  return `Read from ${src}: ${got.join(", ")}.${missing.length ? ` Not found: ${missing.join(", ")}.` : ""} Please check everything against the listing.${L.sqftNote ? " Square footage is the midpoint of the MLS range." : ""}`;
+  return `Read from ${src}: ${got.join(", ")}.${missing.length ? ` Not found: ${missing.join(", ")}.` : ""}${L.__photos ? ` Saved ${L.__photos} listing photo${L.__photos > 1 ? "s" : ""}.` : ""} Please check everything against the listing.${L.sqftNote && /midpoint/.test(L.sqftNote) ? " Square footage is the midpoint of the MLS range." : L.sqftNote ? " Square footage is the exact above-grade figure from the listing." : ""}`;
 }
 
 async function openPdfDoc(blob){ const lib = await loadPdfJs(); return lib.getDocument({data: await blob.arrayBuffer()}).promise; }
@@ -1788,6 +1837,54 @@ async function renderPdfPage(doc, n, width){
   await page.render({canvasContext: c.getContext("2d"), viewport: vp}).promise; return c;
 }
 const canvasBlob = (c, type = "image/jpeg", q = 0.85) => new Promise(res => c.toBlob(res, type, q));
+// Pull the individual listing photos out of an MLS PDF: skips maps, small thumbnails and repeats of the same photo
+function imageToCanvas(img, w, h){
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const ctx = c.getContext("2d");
+  const src = img.bitmap || ((typeof ImageBitmap !== "undefined" && img instanceof ImageBitmap) || (typeof HTMLImageElement !== "undefined" && img instanceof HTMLImageElement) || (typeof HTMLCanvasElement !== "undefined" && img instanceof HTMLCanvasElement) ? img : null);
+  if(src){ ctx.drawImage(src, 0, 0, w, h); return c; }
+  if(!img.data) return null;
+  const out = ctx.createImageData(w, h), d = img.data, o = out.data, n = w * h;
+  if(d.length >= n * 4){ o.set(d.subarray ? d.subarray(0, n * 4) : d.slice(0, n * 4)); }
+  else if(d.length >= n * 3){ for(let i = 0, j = 0; i < n; i++, j += 3){ o[i * 4] = d[j]; o[i * 4 + 1] = d[j + 1]; o[i * 4 + 2] = d[j + 2]; o[i * 4 + 3] = 255; } }
+  else if(d.length >= n){ for(let i = 0; i < n; i++){ o[i * 4] = o[i * 4 + 1] = o[i * 4 + 2] = d[i]; o[i * 4 + 3] = 255; } }
+  else return null;
+  ctx.putImageData(out, 0, 0); return c;
+}
+function imageSig(c){ const t = document.createElement("canvas"); t.width = 12; t.height = 8; const x = t.getContext("2d"); x.drawImage(c, 0, 0, 12, 8); const d = x.getImageData(0, 0, 12, 8).data; const g = []; for(let i = 0; i < d.length; i += 4) g.push(d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11); const mean = g.reduce((a, b) => a + b, 0) / g.length; return {bits: g.map(v => v > mean ? 1 : 0), g}; }
+function colourVariety(c){ const t = document.createElement("canvas"); t.width = 64; t.height = 40; const x = t.getContext("2d"); x.drawImage(c, 0, 0, 64, 40); const d = x.getImageData(0, 0, 64, 40).data; const q = new Set(); for(let i = 0; i < d.length; i += 4) q.add((d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | (d[i + 2] >> 4)); return q.size; }
+const sigClose = (a, b) => a.bits.reduce((n, v, i) => n + (v !== b.bits[i] ? 1 : 0), 0) <= 6 && a.g.reduce((n, v, i) => n + Math.abs(v - b.g[i]), 0) / a.g.length < 18;
+async function extractPdfPhotos(doc, maxPhotos = 60){
+  const OPS = window.pdfjsLib.OPS, found = [], sigs = [];
+  for(let p = 1; p <= doc.numPages && found.length < maxPhotos; p++){
+    const page = await doc.getPage(p);
+    const txt = (await page.getTextContent()).items.map(i => i.str).join(" ");
+    if(/mapbox|openstreetmap|google\s+maps|map\s+data/i.test(txt)) continue;
+    const ops = await page.getOperatorList();
+    for(let i = 0; i < ops.fnArray.length && found.length < maxPhotos; i++){
+      const fn = ops.fnArray[i];
+      if(fn !== OPS.paintImageXObject && fn !== OPS.paintJpegXObject) continue;
+      const name = ops.argsArray[i][0]; if(typeof name !== "string") continue;
+      const store = name.startsWith("g_") ? page.commonObjs : page.objs;
+      const img = await new Promise(res => { let done = false; const t = setTimeout(() => { if(!done) res(null); }, 4000); try { store.get(name, v => { done = true; clearTimeout(t); res(v); }); } catch(e){ clearTimeout(t); res(null); } });
+      if(!img) continue;
+      const w = img.width || (img.bitmap && img.bitmap.width), h = img.height || (img.bitmap && img.bitmap.height);
+      if(!w || !h || w < 380 || h < 250 || w / h > 2.4 || h / w > 2.4) continue;
+      const c = imageToCanvas(img, w, h); if(!c) continue;
+      if(colourVariety(c) < 40) continue; // maps, floor-plan line drawings and logos have only a few flat colours
+      const sig = imageSig(c); if(sigs.some(s0 => sigClose(s0, sig))) continue;
+      sigs.push(sig); found.push(c);
+    }
+  }
+  return found;
+}
+async function uploadPdfPhotos(canvases, baseName, onEach){
+  const recs = [];
+  for(let i = 0; i < canvases.length; i++){
+    if(onEach) onEach(i + 1, canvases.length);
+    try { const blob = await canvasBlob(canvases[i], "image/jpeg", 0.88); if(!blob) continue; const r = await uploadToStorage(new File([blob], `${baseName} photo ${String(i + 1).padStart(2, "0")}.jpg`, {type: "image/jpeg"})); r.kind = "photo"; recs.push(r); } catch(e){}
+  }
+  return recs;
+}
 
 async function handleCompUpload(files){
   if(!files.length) return;
@@ -1809,13 +1906,17 @@ async function handleCompUpload(files){
       const doc = await openPdfDoc(f);
       const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
       L = parseListing(lines.join("\n"));
-      const c = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(c);
-      if(blob) cover = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"}));
-      if(cover) cover.kind = "photo";
+      toast("Finding the listing photos…");
+      const shots = await extractPdfPhotos(doc);
+      const base = (L.address || f.name.replace(/\.pdf$/i, "")).replace(/[^\w\s\-]+/g, "").trim();
+      const photoRecs = await uploadPdfPhotos(shots, base, (n, t) => { if(n === 1 || n % 5 === 0 || n === t) toast(`Saving photo ${n} of ${t}…`); });
+      if(photoRecs.length){ cover = photoRecs; L.__photos = photoRecs.length; }
+      else { const c = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(c); if(blob){ const r = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"})); r.kind = "photo"; cover = [r]; } }
     } catch(e){}
     let pdfRec; try { pdfRec = await uploadToStorage(f); } catch(e){ toast(`${f.name} didn't upload.`); continue; }
-    const filesFor = [pdfRec, ...(cover ? [cover] : []), ...(pdfs.length === 1 ? imgRecs : [])];
+    const filesFor = [...(cover || []), pdfRec, ...(pdfs.length === 1 ? imgRecs : [])];
     const body = {status: "Sold", include: "Yes", ...L, files: filesFor, needsReview: true, created: Date.now(), updated: Date.now()};
+    Object.keys(body).forEach(k => { if(k.startsWith("__")) delete body[k]; });
     if(!body.address) body.address = f.name.replace(/\.pdf$/i, "").replace(/[_\-]+/g, " ");
     created.push(await insertOne("comps", body)); lastNote = listingNote(L, f.name);
   }
@@ -1851,7 +1952,7 @@ function vComps(){
     <p style="margin:0">You can also open a sold listing on HouseSigma, Zolo or Realtor.ca and either save the page as a PDF (Print, then Save as PDF) or copy all the text and use <b>Paste listing text</b>. Screenshots are saved as photos, but their details need typing in.</p></details>`;
   const subj = data.subject[0];
   const subjPanel = `<div class="panel" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3 style="font-size:22px">Our house</h3>
-      ${subj ? `<div class="meta">${esc([subj.address || project.address, subj.propertyType, subj.style, subj.era].filter(Boolean).join(" · "))}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
+      ${subj ? `<div class="meta">${esc([subj.address || project.address, subj.propertyType, subj.style, subj.era].filter(Boolean).join(" · "))}</div><div style="margin-top:4px">${esc([subj.bedrooms && subj.bedrooms + " bed", subj.bathrooms && subj.bathrooms + " bath", num(subj.sqft) && num(subj.sqft).toLocaleString() + " sq ft above grade", num(subj.sqftBelow) && num(subj.sqftBelow).toLocaleString() + " below", lotText(subj) && lotText(subj) + " lot", parkText(subj)].filter(Boolean).join(" · ")) || "Add square feet, bedrooms and lot size to compare."}</div>` : `<p class="meta" style="margin:4px 0 0">Add your house's details as they'll be after the renovation and addition, so comparables can be lined up against it and a rough value worked out.</p>`}</div>
       ${canWrite ? `<button class="btn ${subj ? "" : "primary"}" data-subject>${subj ? "Edit our house" : "Add our house's details"}</button>` : ""}</div></div>`;
   if(!data.comps.length) return header + tips + subjPanel + `<div class="empty"><h3>No comparables yet</h3><p>Upload MLS sold listings and each one gets a summary page with its photos, floor plans, size, lot, parking and key features. This page then lines them all up so you can see what similar houses have sold for.</p><div class="row">${compUploadBtns()}</div></div>`;
 
@@ -1863,7 +1964,7 @@ function vComps(){
   const statsPanel = sold.length ? `<div class="panel" style="margin-bottom:14px"><h3 style="font-size:22px;margin-bottom:6px">${sold.length} sale${sold.length > 1 ? "s" : ""} in the estimate</h3><div class="legend" style="margin-top:0">
       ${stat("Median sold price", money(median(sold.map(c => num(c.soldPrice)))))}
       ${stat("Range", `${money(Math.min(...sold.map(c => num(c.soldPrice))))}–${money(Math.max(...sold.map(c => num(c.soldPrice))))}`)}
-      ${ppsf.length ? stat("Median $ / sq ft", money(median(ppsf))) : ""}
+      ${ppsf.length ? stat("Median $ / sq ft above grade", money(median(ppsf))) : ""}
       ${sold.some(compSlp) ? stat("Sold vs list", Math.round(median(sold.map(compSlp).filter(Boolean)) * 100) + "%") : ""}
       ${sold.some(c => c.dom !== "" && c.dom != null) ? stat("Median days on market", Math.round(median(sold.filter(c => c.dom !== "" && c.dom != null).map(c => num(c.dom))))) : ""}
     </div>
@@ -1888,10 +1989,11 @@ function compRows(list, subj){
     <td class="n">${compPpsf(c) ? money(compPpsf(c)) : "—"}</td>
     <td class="n">${esc(c.bedrooms || "—")}</td><td class="n">${c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : "—"}</td>
     <td class="n">${num(c.sqft) ? num(c.sqft).toLocaleString() : "—"}</td>
+    <td class="n">${num(c.sqftBelow) ? num(c.sqftBelow).toLocaleString() : "—"}</td>
     <td>${esc(lotText(c) || "—")}</td><td>${esc(parkText(c) || "—")}</td>
     <td class="n">${compAdj(c) != null ? money(compAdj(c)) : "—"}</td></tr>`;
-  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td></tr>` : "";
-  return `<div class="tablewrap"><table style="min-width:1050px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
+  const subRow = subj ? `<tr style="background:color-mix(in srgb,var(--accent) 10%,transparent);cursor:pointer" data-subject><td>${compThumb(subj, 60)}</td><td><b>Our house</b><div class="meta">${esc([subj.propertyType, subj.style].filter(Boolean).join(" · ") || "After the renovation")}</div></td><td class="meta">—</td><td class="n">—</td><td class="n">—</td><td class="n">${esc(subj.bedrooms || "—")}</td><td class="n">${subj.bathrooms !== "" && subj.bathrooms != null ? num(subj.bathrooms) : "—"}</td><td class="n">${num(subj.sqft) ? num(subj.sqft).toLocaleString() : "—"}</td><td class="n">${num(subj.sqftBelow) ? num(subj.sqftBelow).toLocaleString() : "—"}</td><td>${esc(lotText(subj) || "—")}</td><td>${esc(parkText(subj) || "—")}</td><td class="n">—</td></tr>` : "";
+  return `<div class="tablewrap"><table style="min-width:1130px"><thead><tr><th></th><th>Address</th><th>Sold</th><th class="n">Price</th><th class="n">$ / sq ft</th><th class="n">Beds</th><th class="n">Baths</th><th class="n">Sq ft above grade</th><th class="n">Below grade</th><th>Lot</th><th>Parking</th><th class="n">Adjusted</th></tr></thead><tbody>${subRow}${list.map(row).join("")}</tbody></table></div><p class="meta">Tap a row to open that comparable's summary page.</p>`;
 }
 function compColumns(list, subj){
   const cols = [...(subj ? [{...subj, __subject: true}] : []), ...list];
@@ -1906,7 +2008,8 @@ function compColumns(list, subj){
     ["Era", c => esc(c.era || "") || ns],
     ["Bedrooms", c => esc(c.bedrooms || "") || ns],
     ["Bathrooms", c => c.bathrooms !== "" && c.bathrooms != null ? num(c.bathrooms) : ns],
-    ["Square feet", c => num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta">${esc(c.sqftNote)}</div>` : "") : ns],
+    ["Sq ft above grade", c => num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta">${esc(c.sqftNote)}</div>` : "") : ns],
+    ["Finished below grade", c => num(c.sqftBelow) ? num(c.sqftBelow).toLocaleString() + (num(c.sqft) ? `<div class="meta">${totalSqft(c).toLocaleString()} total finished</div>` : "") : ns],
     ["Lot", c => esc(lotText(c)) || ns],
     ["Parking", c => num(c.parking) || c.parking === 0 ? num(c.parking) + " space" + (num(c.parking) === 1 ? "" : "s") : ns],
     ["Garage", c => c.garage ? esc(c.garage + (num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : "")) : ns],
@@ -1926,7 +2029,7 @@ function vCompDetail(c){
   const fact = (l, v) => v ? `<div style="padding:10px 0;border-top:1px solid var(--line)"><div class="meta" style="font-variant:small-caps;letter-spacing:.05em">${l}</div><div style="font-size:17px">${v}</div></div>` : "";
   const gallery = (items, kindLabel) => `<div class="gallery">${items.map(f => { const u = fileUrl(f.path); return `<div class="tile"><a class="img" href="${esc(u || "#")}" target="_blank" rel="noopener">${u && u !== "#" ? `<img src="${esc(u)}" alt="${esc(f.name)}" loading="lazy">` : `<span>🖼️</span>`}</a>${canWrite ? `<button data-compkind="${esc(c.id)}|${f.i}" class="meta" style="font-size:13px">Move to ${kindLabel}</button>` : ""}</div>`; }).join("")}</div>`;
   const subj = data.subject[0];
-  const vsOurs = subj ? [num(subj.sqft) && num(c.sqft) ? `${num(c.sqft) > num(subj.sqft) ? "Larger" : num(c.sqft) < num(subj.sqft) ? "Smaller" : "Same size"} than ours by ${Math.abs(num(c.sqft) - num(subj.sqft)).toLocaleString()} sq ft` : "", num(subj.lotFrontage) && num(c.lotFrontage) ? `lot frontage ${num(c.lotFrontage) >= num(subj.lotFrontage) ? "+" : "−"}${Math.abs(num(c.lotFrontage) - num(subj.lotFrontage)).toFixed(1)} ft vs ours` : "", (num(subj.parking) || 0) !== (num(c.parking) || 0) && (c.parking !== undefined && c.parking !== "") ? `${num(c.parking)} parking vs our ${num(subj.parking) || 0}` : ""].filter(Boolean).join("; ") : "";
+  const vsOurs = subj ? [num(subj.sqft) && num(c.sqft) ? `${num(c.sqft) > num(subj.sqft) ? "Larger" : num(c.sqft) < num(subj.sqft) ? "Smaller" : "Same size"} than ours above grade${num(c.sqft) !== num(subj.sqft) ? ` by ${Math.abs(num(c.sqft) - num(subj.sqft)).toLocaleString()} sq ft` : ""}` : "", (num(subj.sqftBelow) || num(c.sqftBelow)) ? `${num(c.sqftBelow).toLocaleString()} sq ft finished below grade vs our ${num(subj.sqftBelow).toLocaleString()}` : "", num(subj.lotFrontage) && num(c.lotFrontage) ? `lot frontage ${num(c.lotFrontage) >= num(subj.lotFrontage) ? "+" : "−"}${Math.abs(num(c.lotFrontage) - num(subj.lotFrontage)).toFixed(1)} ft vs ours` : "", (num(subj.parking) || 0) !== (num(c.parking) || 0) && (c.parking !== undefined && c.parking !== "") ? `${num(c.parking)} parking vs our ${num(subj.parking) || 0}` : ""].filter(Boolean).join("; ") : "";
   return `<div class="row noprint" style="justify-content:space-between;margin-bottom:10px"><button class="btn ghost" data-comp="" style="padding-left:0">← All comparables</button>
       <div class="row">${prev ? `<button class="btn" data-comp="${esc(prev.id)}">← Previous</button>` : ""}${next ? `<button class="btn" data-comp="${esc(next.id)}">Next →</button>` : ""}<button class="btn" data-print>Print</button>${canWrite ? `<button class="btn primary" data-edit="comps" data-id="${esc(c.id)}">Edit</button>` : ""}</div></div>
     ${c.needsReview ? `<p class="banner">These details were read from the listing automatically. Check them, then save the comparable to clear this note.</p>` : ""}
@@ -1939,7 +2042,8 @@ function vCompDetail(c){
         ${compAdj(c) != null ? `<p style="margin:10px 0 0"><b>Adjusted to match our house:</b> ${money(compAdj(c))} <span class="meta">(${num(c.adjustment) >= 0 ? "+" : ""}${money(c.adjustment)})</span></p>` : ""}
         ${vsOurs ? `<p class="meta" style="margin:6px 0 0">${esc(vsOurs)}.</p>` : ""}
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));column-gap:18px;margin-top:14px">
-          ${fact("Bedrooms", esc(c.bedrooms || ""))}${fact("Bathrooms", c.bathrooms !== "" && c.bathrooms != null ? String(num(c.bathrooms)) : "")}${fact("Square feet", num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta" style="font-size:13px">${esc(c.sqftNote)}</div>` : "") : "")}
+          ${fact("Bedrooms", esc(c.bedrooms || ""))}${fact("Bathrooms", c.bathrooms !== "" && c.bathrooms != null ? String(num(c.bathrooms)) : "")}${fact("Square feet above grade", num(c.sqft) ? num(c.sqft).toLocaleString() + (c.sqftNote ? `<div class="meta" style="font-size:13px">${esc(c.sqftNote)}</div>` : "") : "")}
+          ${fact("Finished below grade", num(c.sqftBelow) ? belowText(c) + (num(c.sqft) ? `<div class="meta" style="font-size:13px">${totalSqft(c).toLocaleString()} sq ft finished in total</div>` : "") : (c.basement ? `<span class="meta">Not stated</span>` : ""))}
           ${fact("Lot size", esc(lotText(c)))}${fact("Parking", num(c.parking) || c.parking === 0 ? `${num(c.parking)} space${num(c.parking) === 1 ? "" : "s"}` : "")}${fact("Garage", esc(c.garage ? c.garage + (num(c.garageSpaces) ? ` (${num(c.garageSpaces)})` : "") : ""))}
           ${fact("Type", esc(c.propertyType || ""))}${fact("Style", esc(c.style || ""))}${fact("Built", esc(c.era || ""))}
           ${fact("Basement", esc(c.basement || ""))}${fact("Taxes", num(c.taxes) ? money(c.taxes) + "/yr" : "")}${fact("Heating and cooling", esc(c.heating || ""))}
@@ -1948,6 +2052,8 @@ function vCompDetail(c){
     ${c.notes ? `<div class="group"><h3>Your notes</h3><p class="notes" style="max-width:75ch">${esc(c.notes)}</p></div>` : ""}
     ${photos.length > 1 || (photos.length && !cover) ? `<div class="group"><h3>Photos <span class="meta">${photos.length}</span></h3>${gallery(photos, "floor plans")}</div>` : ""}
     <div class="group"><h3>Floor plans <span class="meta">${floors.length || ""}</span></h3>${floors.length ? gallery(floors, "photos") : `<p class="meta">No floor plans yet. Upload them by editing this comparable, or open the listing pages below and save the floor-plan page.</p>`}</div>
+    ${c.rooms ? `<div class="group"><h3>Room sizes</h3><ul style="margin:0;padding-left:20px;max-width:75ch">${String(c.rooms).split(/\n+/).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+    ${c.history ? `<div class="group"><h3>Sales history</h3><ul style="margin:0;padding-left:20px">${String(c.history).split(/\n+/).filter(Boolean).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
     ${c.remarks ? `<div class="group"><h3>Listing description</h3><p class="notes" style="max-width:75ch">${esc(c.remarks)}</p></div>` : ""}
     ${pdfs.length ? `<div class="group"><h3>MLS listings and documents</h3>${filesHTML(pdfs)}<button class="btn noprint" style="margin-top:10px" data-renderpdf="${esc(c.id)}">Show the listing pages here</button><div id="pdfpages" style="display:grid;gap:14px;margin-top:12px"></div></div>` : ""}
     ${others.length ? `<div class="group"><h3>Other files</h3>${filesHTML(others)}</div>` : ""}`;
@@ -2084,7 +2190,8 @@ async function readListingFromStorage(f, wantCover){
     const file = await inboxBlob(f); const doc = await openPdfDoc(file);
     const lines = []; for(let p = 1; p <= Math.min(doc.numPages, 4); p++){ const tc = await (await doc.getPage(p)).getTextContent(); const rows = new Map(); tc.items.forEach(it => { if(!it.str || !it.str.trim()) return; const y = Math.round(it.transform[5] / 3) * 3; if(!rows.has(y)) rows.set(y, []); rows.get(y).push({x: it.transform[4], s: it.str}); }); [...rows.keys()].sort((a, b) => b - a).forEach(y => lines.push(rows.get(y).sort((a, b) => a.x - b.x).map(r => r.s).join("  "))); }
     L = parseListing(lines.join("\n"));
-    if(wantCover){ const cv = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(cv); if(blob){ const r = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"})); r.kind = wantCover; extra.push(r); } }
+    if(wantCover === "photo"){ toast("Finding the listing photos…"); const shots = await extractPdfPhotos(doc); const base = (L.address || f.name.replace(/\.pdf$/i, "")).replace(/[^\w\s\-]+/g, "").trim(); extra = await uploadPdfPhotos(shots, base, (n, t) => { if(n === 1 || n % 5 === 0 || n === t) toast(`Saving photo ${n} of ${t}…`); }); if(extra.length) L.__photos = extra.length; }
+    if(wantCover && !extra.length){ const cv = await renderPdfPage(doc, 1, 1100); const blob = await canvasBlob(cv); if(blob){ const r = await uploadToStorage(new File([blob], f.name.replace(/\.pdf$/i, "") + "-page-1.jpg", {type: "image/jpeg"})); r.kind = wantCover; extra.push(r); } }
   } catch(e){}
   return {L, extra};
 }
@@ -2098,17 +2205,18 @@ async function fileToComp(m, items, compId){
   // items: [{f, idx, kind}]
   const listing = items.find(x => isPdfFile(x.f) && x.kind === "listing");
   let L = {}, cover = [];
-  if(listing){ toast("Reading the MLS listing…"); const r = await readListingFromStorage(listing.f, compId ? "" : "photo"); L = r.L; cover = r.extra; }
+  if(listing){ toast("Reading the MLS listing…"); const existing = compId && data.comps.find(z => z.id === compId); const needPhotos = !compId || (existing && !compPhotos(existing).length); const r = await readListingFromStorage(listing.f, needPhotos ? "photo" : ""); L = r.L; cover = r.extra; }
   let recs = [];
   for(const x of items) recs = recs.concat(await compFilesFrom(x.f, x.kind));
   let id = compId, filledNote = "";
   if(compId){
     const c = data.comps.find(z => z.id === compId); if(!c) throw new Error("missing");
-    const fill = {}; Object.keys(L).forEach(k => { if(!k.startsWith("__") && (c[k] === undefined || c[k] === "" || c[k] === null)) fill[k] = L[k]; });
+    const fill = {}; Object.keys(L).filter(k => !k.startsWith("__")).forEach(k => { if(!k.startsWith("__") && (c[k] === undefined || c[k] === "" || c[k] === null)) fill[k] = L[k]; });
     if(Object.keys(fill).length) filledNote = ` and filled in ${Object.keys(fill).length} missing detail${Object.keys(fill).length > 1 ? "s" : ""} from the listing`;
-    await updRec(c, {...fill, ...(Object.keys(fill).length ? {needsReview: true} : {}), files: [...(c.files || []), ...recs]});
+    await updRec(c, {...fill, ...(Object.keys(fill).length ? {needsReview: true} : {}), files: [...cover, ...(c.files || []), ...recs]});
   } else {
-    const body = {status: "Sold", include: "Yes", ...L, files: [...recs, ...cover], needsReview: true, notes: "From email: " + m.subject, created: Date.now(), updated: Date.now()};
+    const body = {status: "Sold", include: "Yes", ...L, files: [...cover, ...recs], needsReview: true, notes: "From email: " + m.subject, created: Date.now(), updated: Date.now()};
+    Object.keys(body).forEach(k => { if(k.startsWith("__")) delete body[k]; });
     if(!body.address){ const k = emailContact(m); body.address = (m.subject || "").replace(/^\s*(re|fwd?|fw)\s*:\s*/i, "").slice(0, 80) || "New comparable"; }
     id = await insertOne("comps", body);
   }
